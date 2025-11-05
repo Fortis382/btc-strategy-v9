@@ -1,0 +1,73 @@
+﻿# === Python ===
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === Virtual Environment ===
+venv/
+env/
+ENV/
+.venv
+
+# === Data Files (용량 큼) ===
+data/raw/*.parquet
+data/processed/*.parquet
+data/partitioned/**/*.parquet
+*.csv
+
+# === Cache ===
+cache/**/*.parquet
+cache/**/*.pkl
+*.pyc
+
+# === Logs ===
+logs/**/*.log
+logs/**/*.jsonl
+
+# === Secrets ===
+config/secrets.env
+*.key
+*.pem
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Jupyter ===
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# === Testing ===
+.pytest_cache/
+.coverage
+htmlcov/
+
+# === Temp ===
+*.tmp
+*.bak
+*.orig
