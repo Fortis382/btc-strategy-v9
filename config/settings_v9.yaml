@@ -15,24 +15,27 @@ indicators:
   adx: 14
   # slope 정규화 상수(봉당 % 단위). 값↑ = 보수적
   ema_slope_norm: 0.05
+  ema_bias_norm: 0.010
 
 gates:
+  require_mtf: false
   use_adx_gate: true
   use_trend_gate: true
   use_range_gate: true
-  adx_min: 26            # ADX 임계 ↑ (정규화 -0.48→촙 회피)
-  ema_slope_min: 0.06    # 기울기 임계 소폭 ↑
-  min_range_atr: 0.62    # 캔들 범위 ≥ 0.58×ATR
+  adx_min: 18            # ADX 임계 ↑ (정규화 -0.48→촙 회피)
+  ema_slope_min: 0.05    # 기울기 임계 소폭 ↑
+  min_range_atr: 0.80    # 캔들 범위 ≥ 0.58×ATR
   adx_strict_buffer: 0.20 # ADX 약하면 3-of-3 강화 스위치
-  cooloff_bars: 4        # 촙 구간 연속 진입 억제
+  cooloff_bars: 2        # 촙 구간 연속 진입 억제
 
 scoring:
   # 모든 서브스코어는 -1..+1 클램프
   weights:
-    trend: 0.55
-    momentum: 0.20
+    trend: 0.40
+    momentum: 0.30
     volatility: 0.10
-    regime: 0.15
+    regime: 0.20
+    location: 0.05
 
 thresholds:
   cand_score_min: 0.02
@@ -57,8 +60,9 @@ output:
 
 debug:
   auto_thresholds:
-    cand_pct: 0.83            # cand = 상위 22%
-    enter_pct: 0.92           # enter = 상위 12%
+    cand_pct: 0.78            # cand = 상위 22%
+    enter_pct: 0.90           # enter = 상위 12%
   no_gate: false
   force_cand_from_score: false  # ★ 게이트 우회 금지
+  force_pct: 0.75
   log_breakdown: true
