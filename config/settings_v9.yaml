@@ -21,18 +21,18 @@ gates:
   use_trend_gate: true
   use_range_gate: true
   adx_min: 26            # ADX 임계 ↑ (정규화 -0.48→촙 회피)
-  ema_slope_min: 0.05    # 기울기 임계 소폭 ↑
-  min_range_atr: 0.58    # 캔들 범위 ≥ 0.58×ATR
-  adx_strict_buffer: 0.20# ADX 약하면 3-of-3 강화 스위치
-  cooloff_bars: 3        # 촙 구간 연속 진입 억제
+  ema_slope_min: 0.06    # 기울기 임계 소폭 ↑
+  min_range_atr: 0.62    # 캔들 범위 ≥ 0.58×ATR
+  adx_strict_buffer: 0.20 # ADX 약하면 3-of-3 강화 스위치
+  cooloff_bars: 4        # 촙 구간 연속 진입 억제
 
 scoring:
   # 모든 서브스코어는 -1..+1 클램프
   weights:
-    trend: 0.50
-    momentum: 0.25
+    trend: 0.55
+    momentum: 0.20
     volatility: 0.10
-    regime: 0.10
+    regime: 0.15
 
 thresholds:
   cand_score_min: 0.02
@@ -48,8 +48,8 @@ risk:
     - { min: 0.80, max: 1.00, lev: 7 }
   atr_tp: [1.2, 1.3, 1.5]
   atr_sl: 1.0
-  trail_k: 0.6
-  max_hold_min: 180           # 12h → 3h로 완화(초기 MDD 방지)
+  trail_k: 0.7
+  max_hold_min: 120           # 12h → 3h로 완화(초기 MDD 방지)
 
 output:
   trades_csv: "logs/trades.csv"
