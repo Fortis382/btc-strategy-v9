@@ -2,36 +2,44 @@
 from __future__ import annotations
 import polars as pl
 
+_EPS = 1e-12
+
+def _clip01_to_pm1(expr: pl.Expr) -> pl.Expr:
+    # map 0..100 -> -1..+1 by x/50 - 1
+    return (expr / 50.0) - 1.0
+
 def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     w = cfg["scoring"]["weights"]
     g = cfg["gates"]
 
-    trend = pl.col("ema21_slope_n").clip(-1, 1)
-    mom   = pl.col("rsi_n").clip(-1, 1)
-    vol_q90 = pl.col("atr_p").quantile(0.9)
-    vol   = (1.0 - (pl.col("atr_p") / (vol_q90 + 1e-12))).clip(-1.0, 1.0)
-    reg   = pl.col("adx_n").clip(-1, 1)
+    # --- features (all in -1..+1) ---
+    slope_n = pl.col("ema21_slope_n").clip(-1, 1)
+    rsi_n   = _clip01_to_pm1(pl.col("rsi14")).clip(-1, 1)  # derive rsi_n from rsi14 if not present
+    adx_n   = _clip01_to_pm1(pl.col("adx14")).clip(-1, 1)
 
-    denom = (w["trend"] + w["momentum"] + w["volatility"] + w["regime"]) or 1.0
-    score_expr = (w["trend"]*trend + w["momentum"]*mom + w["volatility"]*vol + w["regime"]*reg) / denom
-    score_expr = score_expr.clip(-1.0, 1.0)
+    # volatility score: penalize high ATR%
+    vol_ref = df["atr_p"].quantile(0.90)
+    vol_sc  = (1.0 - (pl.col("atr_p") / (vol_ref + _EPS))).clip(-1.0, 1.0)
 
-    use_adx   = bool(g.get("use_adx_gate", True))
-    use_trend = bool(g.get("use_trend_gate", True))
-    use_range = bool(g.get("use_range_gate", False))
+    score = (
+        w["trend"]      * slope_n +
+        w["momentum"]   * rsi_n +
+        w["volatility"] * vol_sc +
+        w["regime"]     * adx_n
+    ) / (w["trend"] + w["momentum"] + w["volatility"] + w["regime"] or 1.0)
 
-    adx_thr_norm = (g["adx_min"] / 50.0) - 1.0
-    trend_thr    = g["ema_slope_min"]
+    # --- gates ---
+    conds = []
+    if g.get("use_adx_gate", True):
+        conds.append(adx_n >= (_clip01_to_pm1(pl.lit(float(g.get("adx_min", 20))))))
+    if g.get("use_trend_gate", True):
+        conds.append(pl.col("ema21_slope_n") >= pl.lit(float(g.get("ema_slope_min", 0.06))))
+    if g.get("use_range_gate", False):
+        conds.append(((pl.col("high") - pl.col("low")) / (pl.col("atr14_abs") + _EPS)) >= pl.lit(float(g.get("min_range_atr", 0.6))))
 
-    chop_ok  = pl.when(pl.lit(use_adx)).then(pl.col("adx_n") >= adx_thr_norm).otherwise(pl.lit(True))
-    trend_ok = pl.when(pl.lit(use_trend)).then(pl.col("ema21_slope_n") >= trend_thr).otherwise(pl.lit(True))
-    range_ok = pl.when(pl.lit(use_range)).then(
-        (pl.col("high") - pl.col("low")) >= (float(g.get("min_range_atr", 0.6)) * pl.col("atr14_abs"))
-    ).otherwise(pl.lit(True))
-
-    gate_ok_expr = (chop_ok & trend_ok & range_ok).fill_null(False)
+    gate_ok = pl.all_horizontal(conds) if conds else pl.lit(True)
 
     return df.with_columns([
-        score_expr.alias("score"),
-        gate_ok_expr.alias("gate_ok"),
+        score.clip(-1.0, 1.0).alias("score"),
+        gate_ok.alias("gate_ok"),
     ])

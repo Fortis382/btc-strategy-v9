@@ -4,76 +4,79 @@ import polars as pl
 
 _EPS = 1e-12
 
-def ema(expr: pl.Expr, span: int) -> pl.Expr:
-    alpha = 2.0 / (span + 1.0)
-    return expr.ewm_mean(alpha=alpha)
+def _clamp(expr: pl.Expr, lo: float, hi: float) -> pl.Expr:
+    # polars 전버전 호환용: Expr.clip 대체
+    return pl.min_horizontal(pl.max_horizontal(expr, pl.lit(lo)), pl.lit(hi))
 
-def rsi(close: pl.Expr, length: int) -> pl.Expr:
-    d = close.diff()
-    gain = pl.when(d > 0).then(d).otherwise(0.0).ewm_mean(alpha=1.0/length)
-    loss = pl.when(d < 0).then(-d).otherwise(0.0).ewm_mean(alpha=1.0/length)
-    rs = gain / (loss + _EPS)
-    return 100.0 - (100.0 / (1.0 + pl.max_horizontal(rs, pl.lit(0.0))))
-
-def atr_abs(high: pl.Expr, low: pl.Expr, close: pl.Expr, length: int) -> pl.Expr:
-    tr = pl.max_horizontal(
-        high - low,
-        (high - close.shift(1)).abs(),
-        (low  - close.shift(1)).abs(),
-    )
-    return tr.ewm_mean(alpha=1.0/length)
-
-def adx(high: pl.Expr, low: pl.Expr, close: pl.Expr, length: int) -> pl.Expr:
-    up  = high - high.shift(1)
-    dn  = low.shift(1) - low
-    plus_dm  = pl.when((up > dn) & (up > 0)).then(up).otherwise(0.0)
-    minus_dm = pl.when((dn > up) & (dn > 0)).then(dn).otherwise(0.0)
-
-    tr = pl.max_horizontal(
-        high - low,
-        (high - close.shift(1)).abs(),
-        (low  - close.shift(1)).abs(),
-    )
-    alpha = 1.0/length
-    atr = tr.ewm_mean(alpha=alpha) + _EPS
-    pdi = (plus_dm .ewm_mean(alpha=alpha) * 100.0) / atr
-    mdi = (minus_dm.ewm_mean(alpha=alpha) * 100.0) / atr
-    dx  = ((pdi - mdi).abs() / (pdi + mdi + _EPS)) * 100.0
-    return dx.ewm_mean(alpha=alpha)
+def _clip_lower(expr: pl.Expr, lo: float) -> pl.Expr:
+    # polars 전버전 호환용: clip_min 대체
+    return pl.max_horizontal(expr, pl.lit(lo))
 
 def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
-    e1, e2     = cfg["indicators"]["ema"]
-    rlen       = cfg["indicators"]["rsi"]
-    alen       = cfg["indicators"]["atr"]
-    dxlen      = cfg["indicators"]["adx"]
-    slope_norm = float(cfg["indicators"]["ema_slope_norm"] or 0.05)
+    """
+    9.4v 계약 준수 컬럼 생성:
+      - ema{fast}, ema{slow}
+      - rsi{rlen}
+      - atr{alen}_abs
+      - adx{dlen}
+      - ema21_slope_pct, ema21_slope_n, atr_p, rsi_n, adx_n
+    주의: scoring/gates가 'ema21_*' 명칭을 기대하므로 fast=21 기준으로 이름 고정.
+    """
+    ema_fast, ema_slow = cfg["indicators"]["ema"]
+    rlen = int(cfg["indicators"]["rsi"])
+    alen = int(cfg["indicators"]["atr"])
+    dlen = int(cfg["indicators"]["adx"])
+    slope_norm = float(cfg["indicators"]["ema_slope_norm"])  # % per bar
 
-    lf = df.lazy().with_columns([
-        ema(pl.col("close"), e1).alias("ema21"),
-        ema(pl.col("close"), e2).alias("ema55"),
-        rsi(pl.col("close"), rlen).alias("rsi14"),
-        adx(pl.col("high"),  pl.col("low"),  pl.col("close"), dxlen).alias("adx14"),
+    lf = df.lazy()
+
+    # 1) EMA
+    lf = lf.with_columns([
+        pl.col("close").ewm_mean(span=ema_fast).alias(f"ema{ema_fast}"),
+        pl.col("close").ewm_mean(span=ema_slow).alias(f"ema{ema_slow}"),
     ])
 
-    # ---- ATR을 먼저 Expr로 잡은 뒤 두 이름으로 export(호환) ----
-    atr_expr = atr_abs(pl.col("high"), pl.col("low"), pl.col("close"), alen)
+    # 2) RSI (구버전 호환: clip_min 대신 max_horizontal)
+    diff = pl.col("close").diff()
+    gain = pl.when(diff > 0).then(diff).otherwise(0.0)
+    loss = pl.when(diff < 0).then(-diff).otherwise(0.0)
+    avg_gain = gain.ewm_mean(span=rlen)
+    avg_loss = loss.ewm_mean(span=rlen) + _EPS
+    rs = avg_gain / avg_loss
+    rs_pos = _clip_lower(rs, 0.0)
+    rsi = (100.0 - (100.0 / (1.0 + rs_pos))).alias(f"rsi{rlen}")
 
-    # ---- 파생/정규화: 식을 변수로 먼저 만든 뒤 재사용 ----
-    slope_expr = ((pl.col("ema21") / pl.col("ema21").shift(1)) - 1.0) * 100.0
-    bias_expr  = (pl.col("close") / pl.col("ema21") - 1.0)
-    rsi_n_expr = ((pl.col("rsi14") - 50.0) / 50.0).clip(-1.0, 1.0)
-    atr_p_expr = (atr_expr / (pl.col("close") + _EPS))
-    adx_n_expr = ((pl.col("adx14") / 50.0) - 1.0).clip(-1.0, 1.0)
+    # 3) ATR(절대값)
+    tr = pl.max_horizontal(
+        (pl.col("high") - pl.col("low")),
+        (pl.col("high") - pl.col("close").shift(1)).abs(),
+        (pl.col("low")  - pl.col("close").shift(1)).abs(),
+    )
+    atr_abs = tr.ewm_mean(span=alen).alias(f"atr{alen}_abs")
+
+    # 4) ADX
+    up   = pl.col("high") - pl.col("high").shift(1)
+    down = pl.col("low").shift(1) - pl.col("low")
+    plus_dm  = pl.when((up > down) & (up > 0)).then(up).otherwise(0.0)
+    minus_dm = pl.when((down > up) & (down > 0)).then(down).otherwise(0.0)
+    tr_ewm   = tr.ewm_mean(span=dlen) + _EPS
+    pdi = (plus_dm.ewm_mean(span=dlen)  / tr_ewm) * 100.0
+    mdi = (minus_dm.ewm_mean(span=dlen) / tr_ewm) * 100.0
+    dx  = ((pdi - mdi).abs() / ((pdi + mdi).abs() + _EPS)) * 100.0
+    adx = dx.ewm_mean(span=dlen).alias(f"adx{dlen}")
+
+    lf = lf.with_columns([rsi, atr_abs, adx])
+
+    # 5) 파생/정규화 (9.4v 스코어 계약)
+    ema_fast_col = pl.col(f"ema{ema_fast}")
+    ema_slope_pct = ((ema_fast_col / ema_fast_col.shift(1) - 1.0) * 100.0).fill_null(0.0)
 
     lf = lf.with_columns([
-        atr_expr.alias("atr14_abs"),
-        atr_expr.alias("atr14"),  # ← 백워드 호환용 별칭
-        slope_expr.alias("ema21_slope_pct"),
-        (slope_expr / slope_norm).clip(-1.0, 1.0).alias("ema21_slope_n"),
-        bias_expr.alias("ema21_bias"),
-        rsi_n_expr.alias("rsi_n"),
-        atr_p_expr.alias("atr_p"),
-        adx_n_expr.alias("adx_n"),
+        ema_slope_pct.alias("ema21_slope_pct"),  # 계약명 고정
+        _clamp(pl.col("ema21_slope_pct") / (slope_norm + _EPS), -1.0, 1.0).alias("ema21_slope_n"),
+        ((pl.col(f"atr{alen}_abs") / (pl.col("close") + _EPS)) * 100.0).alias("atr_p"),
+        _clamp((pl.col(f"rsi{rlen}") - 50.0) / 50.0, -1.0, 1.0).alias("rsi_n"),
+        _clamp(pl.col(f"adx{dlen}") / 50.0 - 1.0, -1.0, 1.0).alias("adx_n"),
     ])
 
     return lf.collect()
