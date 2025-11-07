@@ -316,41 +316,49 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     df = add_indicators(df, cfg)
     df = score_and_gate(df, cfg)
 
-    # thresholds
-    thr_c, thr_e, thr_info = compute_thresholds(df["score"], cfg)
+    # ---------- thresholds (GATE-AWARE) ----------
+    dbg = cfg.get("debug", {})
+    use_gate = not bool(dbg.get("no_gate", False))
 
-    # === Regime-biased score (추세 구간 편향) ===
-    # YAML에서 없으면 기본값 0.02/0.04 사용
-    bias_c = float(cfg.get("scoring", {}).get("bias_trend_cand", 0.02))
-    bias_e = float(cfg.get("scoring", {}).get("bias_trend_enter", 0.04))
+    if use_gate:
+        # 게이트 통과 집합에서만 분위 임계 계산
+        score_pool = df.filter(pl.col("gate_ok"))["score"]
+        pool_tag = "gate_ok"
+    else:
+        score_pool = df["score"]
+        pool_tag = "all"
 
+    thr_c, thr_e, thr_info = compute_thresholds(score_pool, cfg)
+    # 디버깅 보조 정보
+    thr_info.update({
+        "pool": pool_tag,
+        "pool_size": int(score_pool.len()),
+    })
+
+    # ---------- score aliases (bias 없음) ----------
     df = df.with_columns([
-        pl.when((pl.col("adx_n") >= 0.0) & (pl.col("ema21_slope_n") > 0.0))
-          .then(pl.col("score") + pl.lit(bias_e))
-          .otherwise(pl.col("score"))
-          .alias("score_enter"),
-
-        pl.when((pl.col("adx_n") >= 0.0) & (pl.col("ema21_slope_n") > 0.0))
-          .then(pl.col("score") + pl.lit(bias_c))
-          .otherwise(pl.col("score"))
-          .alias("score_cand"),
+        pl.col("score").alias("score_enter"),
+        pl.col("score").alias("score_cand"),
     ])
 
-    # masks
+    # ---------- masks ----------
     g = cfg["gates"]
-    dbg = cfg.get("debug", {})
-    base_gate = df["gate_ok"] | pl.Series([dbg.get("no_gate", False)] * len(df))
 
-    # ← cand는 score_cand, enter는 score_enter 사용
+    if use_gate:
+        base_gate = df["gate_ok"]  # 게이트 적용
+    else:
+        base_gate = pl.Series([True] * len(df), dtype=pl.Boolean)  # 게이트 무시
+
     cand_mask = (df["score_cand"] >= thr_c)
     enter_mask = (df["score_enter"] >= thr_e)
 
-    if g.get("cooloff_bars", 0) > 0:
+    # cand 쿨오프(있으면)
+    if int(g.get("cooloff_bars", 0)) > 0:
         cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
 
-    if not dbg.get("no_gate", False):
-        cand_mask = cand_mask & base_gate
-        enter_mask = enter_mask & base_gate
+    # 게이트 적용
+    cand_mask = cand_mask & base_gate
+    enter_mask = enter_mask & base_gate
 
     df = df.with_columns([
         pl.Series("cand_mask", cand_mask),
