@@ -1,0 +1,52 @@
+# config/settings_v9.yaml
+data:
+  # 우선 순위: partitioned 디렉터리 → 단일 파일
+  path_primary: "data/partitioned"
+  path_fallback: "data/processed/BTCUSDT_15m.parquet"
+  symbol: "BTCUSDT"
+  tf: "15m"
+  start: null   # 예: "2025-09-01"
+  end:   null   # 예: "2025-11-07"
+
+indicators:
+  ema: [21, 55]
+  rsi: 14
+  atr: 14
+  adx: 14
+  # slope 정규화 상수(봉당 % 단위). 값↑ = 보수적
+  ema_slope_norm: 0.05
+
+gates:
+  require_mtf: false
+  adx_min: 15
+  ema_slope_min: 0.0
+  cooloff_bars: 6
+
+scoring:
+  # 모든 서브스코어는 -1..+1 클램프
+  weights:
+    trend: 0.45
+    momentum: 0.35
+    volatility: 0.10
+    regime: 0.10
+
+thresholds:
+  cand_score_min: 0.74
+  enter_score_min: 0.78
+
+risk:
+  R: 0.005
+  max_leverage: 7
+  lev_map:
+    - { min: 0.60, max: 0.65, lev: 2 }
+    - { min: 0.65, max: 0.75, lev: 4 }
+    - { min: 0.75, max: 0.80, lev: 6 }
+    - { min: 0.80, max: 1.00, lev: 7 }
+  atr_tp: [1.2, 1.3, 1.5]
+  atr_sl: 1.0
+  trail_k: 0.6
+  max_hold_min: 720   # 12h (15m 기준 48봉)
+
+output:
+  trades_csv: "logs/trades.csv"
+  dbg_json:   "logs/last_debug.json"
