@@ -1,23 +1,7 @@
-﻿# --- environments ---
-/venv/
-/.venv/
-**/venv/**
-**/.venv/**
-
-# data & artifacts
-data/*
-!data/**/.gitkeep
-logs/*
-!logs/.gitkeep
-models/*
-!models/.gitkeep
-reports/*
-!reports/.gitkeep
-
-# caches
-__pycache__/
-.ipynb_checkpoints/
-
-# dotenv (샘플만 커밋)
-.env
-.env.*.local
+﻿__pycache__/
+venv/
+data/raw/*.parquet
+data/processed/*.parquet
+cache/**/*.parquet
+logs/**/*.log
+config/secrets.env

@@ -1,0 +1,12 @@
+﻿{
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.postCommitCommand": "push",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+
+  // 권장 추가
+  "git.suggestSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autoStash": true
+}
