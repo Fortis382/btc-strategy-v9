@@ -1,16 +1,31 @@
 # scripts/backtest/run_backtest.py
 from __future__ import annotations
-import argparse, json, math
+
+# ---- robust path bootstrap (must be first) ----
+import sys
 from pathlib import Path
+
+FILE = Path(__file__).resolve()
+# repo root: .../btc-v9
+PROJECT_ROOT = FILE.parents[2]
+
+SRC_PATH = PROJECT_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    # put src at the very front — ensure imports work no matter cwd
+    sys.path.insert(0, str(SRC_PATH))
+
+# (optional) also make PROJECT_ROOT importable (ex: config helpers later)
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+# -----------------------------------------------
+
+import argparse, json, math
 import polars as pl
-import yaml, sys
+import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(PROJECT_ROOT / "src"))
-
-from core.loader_polars import load_ohlcv
-from signals.indicators import add_indicators
-from core.scoring import score_and_gate
+from src.core.loader_polars import load_ohlcv
+from src.signals.indicators import add_indicators
+from src.core.scoring import score_and_gate
 
 def load_cfg(p: Path) -> dict:
     with p.open("r", encoding="utf-8") as f:

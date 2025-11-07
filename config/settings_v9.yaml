@@ -20,12 +20,11 @@ gates:
   use_adx_gate: true
   use_trend_gate: true
   use_range_gate: true
-  adx_min: 26              # 24→26
-  ema_slope_min: 0.05      # 0.04→0.05
-  min_range_atr: 0.58      # 0.50→0.58
-  # 적응형 스위치 버퍼(ADX가 약하면 엄격모드로 전환)
-  adx_strict_buffer: 0.20
-  cooloff_bars: 3          # 2→3 (촙 연속 진입 완화)
+  adx_min: 26            # ADX 임계 ↑ (정규화 -0.48→촙 회피)
+  ema_slope_min: 0.05    # 기울기 임계 소폭 ↑
+  min_range_atr: 0.58    # 캔들 범위 ≥ 0.58×ATR
+  adx_strict_buffer: 0.20# ADX 약하면 3-of-3 강화 스위치
+  cooloff_bars: 3        # 촙 구간 연속 진입 억제
 
 scoring:
   # 모든 서브스코어는 -1..+1 클램프
@@ -33,7 +32,7 @@ scoring:
     trend: 0.50
     momentum: 0.25
     volatility: 0.10
-    regime: 0.15
+    regime: 0.10
 
 thresholds:
   cand_score_min: 0.02
