@@ -204,15 +204,18 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     close = df["close"]
     atr = df[atr_col_abs]
 
-    tp_R = risk.get("atr_tp", [1.2, 1.3, 1.5])
+    # RR 설계
+    tp_R = [float(x) for x in risk.get("atr_tp", [1.2, 1.3, 1.5])]
     sl_R = float(risk.get("atr_sl", 1.0))
-    max_hold_bars = int(risk.get("max_hold_min", 720) // 15)  # TF=15m
+    # TF=15m 가정: 분 단위 제한을 15분봉 수로 환산
+    max_hold_bars = int(risk.get("max_hold_min", 720) // 15)
 
     rows = []
     i = 0
     n = len(df)
+
     while i < n:
-        if df["enter_mask"][i]:
+        if bool(df["enter_mask"][i]):
             entry = float(close[i])
             atr_i = float(atr[i])
             tp_levels = [entry + k * atr_i for k in tp_R]
@@ -221,48 +224,80 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
             j = i + 1
             rr = 0.0
             reason = "timeout"
+            # 최대 보유 바 or 데이터 끝 중 먼저 오는 곳까지 스캔
             while j < n and (j - i) <= max_hold_bars:
                 hi = float(df["high"][j])
                 lo = float(df["low"][j])
+
+                # 손절 선체크(우선순위)
                 if lo <= sl_level:
                     rr = -sl_R
                     reason = "sl"
                     break
-                hit = None
+
+                # 분할 익절 레벨 히트 체크(가장 이른 히트)
+                hit_idx = None
                 for k, tp in enumerate(tp_levels, start=1):
                     if hi >= tp:
-                        hit = k
+                        hit_idx = k
                         break
-                if hit is not None:
-                    rr = float(tp_R[hit - 1] / sl_R)
-                    reason = f"tp{hit}"
+                if hit_idx is not None:
+                    rr = float(tp_R[hit_idx - 1] / sl_R)  # R 단위 기대값
+                    reason = f"tp{hit_idx}"
                     break
+
                 j += 1
-            rows.append((df["ts"][i], entry, df["ts"][j - 1] if j > i else df["ts"][i],
-                         float(close[j - 1]) if j > i else entry, reason, j - i, rr))
-            i = j
+
+            # j == i+1이며 while 한 번도 못 돌면 j-1 접근 안전하게 보정
+            last_idx = (j - 1) if j > i else i
+            rows.append((
+                df["ts"][i],
+                entry,
+                df["ts"][last_idx],
+                float(close[last_idx]),
+                reason,
+                int(j - i),
+                float(rr),
+            ))
+            i = j  # 포지션 소모 후 다음으로 점프
         else:
             i += 1
 
-    trades = pl.DataFrame(rows, schema=["entry_ts", "entry", "exit_ts", "exit", "reason", "bars", "rr"]) \
-        if rows else pl.DataFrame(schema=["entry_ts", "entry", "exit_ts", "exit", "reason", "bars", "rr"])
+    # === 결과 테이블 구성 (경고 제거 + dtype 명시) ===
+    schema = {
+        "entry_ts": pl.Datetime,
+        "entry": pl.Float64,
+        "exit_ts": pl.Datetime,
+        "exit": pl.Float64,
+        "reason": pl.Utf8,
+        "bars": pl.Int32,
+        "rr": pl.Float64,
+    }
+    if rows:
+        trades = pl.DataFrame(rows, schema=schema, orient="row")
+    else:
+        trades = pl.DataFrame(schema=schema)
 
-    if len(trades) == 0:
+    if trades.height == 0:
         result = {"winrate": 0.0, "pf": 0.0, "expR": 0.0, "mdd_R": 0.0, "avg_hold_bars": 0}
         return trades, result
 
+    # 기본 성과
     wins = trades.filter(pl.col("rr") > 0)
     losses = trades.filter(pl.col("rr") < 0)
     gross_win = float(wins["rr"].sum()) if wins.height else 0.0
-    gross_loss = -float(losses["rr"].sum()) if losses.height else 0.0
-    pf = (gross_win / gross_loss) if gross_loss > 1e-12 else float("inf")
+    gross_loss_abs = -float(losses["rr"].sum()) if losses.height else 0.0
+
+    pf = (gross_win / gross_loss_abs) if gross_loss_abs > 1e-12 else float("inf")
     winrate = float((trades["rr"] > 0).mean())
     expR = float(trades["rr"].mean())
     avg_hold = int(float(trades["bars"].mean()))
 
-    eq = trades["rr"].cumsum()
+    # === 에쿼티 곡선 & MDD 계산 (Polars API 호환) ===
+    rr_series = trades["rr"].fill_null(0.0)
+    eq = rr_series.cum_sum()             # <- 핵심 수정: cumsum() → cum_sum()
     peak = eq.cum_max()
-    dd = peak - eq
+    dd = (peak - eq)
     mdd_R = float(dd.max()) if dd.len() > 0 else 0.0
 
     result = {
