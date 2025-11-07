@@ -18,9 +18,13 @@ indicators:
 
 gates:
   require_mtf: false
-  adx_min: 8
-  ema_slope_min: -0.02
-  cooloff_bars: 6
+  adx_min: 20
+  ema_slope_min: 0.06
+  use_adx_gate: true
+  use_trend_gate: true
+  use_range_gate: true       # ← 범위 게이트 켜기
+  min_range_atr: 0.60        # (고-저) ≥ 0.6×ATR 이면 OK
+  cooloff_bars: 2
 
 scoring:
   # 모든 서브스코어는 -1..+1 클램프
@@ -31,8 +35,8 @@ scoring:
     regime: 0.10
 
 thresholds:
-  cand_score_min: 0.62
-  enter_score_min: 0.66
+  cand_score_min: 0.02
+  enter_score_min: 0.08
 
 risk:
   R: 0.005
@@ -50,3 +54,13 @@ risk:
 output:
   trades_csv: "logs/trades.csv"
   dbg_json:   "logs/last_debug.json"
+
+debug:
+  auto_thresholds:
+    cand_pct: 0.70   # cand = score 상위 30%
+    enter_pct: 0.85  # enter = score 상위 15%
+  no_gate: false                 # ← 게이트(gate_ok) 무시하고 cand=score>=cand_thr
+  force_cand_from_score: true   # ← 점수 백분위로 cand 강제 (no_gate가 우선)
+  force_pct: 0.75               # 상위 25% cand
+  log_breakdown: true           # 분해 통계 로그 기록
+
