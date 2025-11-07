@@ -17,22 +17,23 @@ indicators:
   ema_slope_norm: 0.05
 
 gates:
-  require_mtf: false
-  adx_min: 20
-  ema_slope_min: 0.06
   use_adx_gate: true
   use_trend_gate: true
-  use_range_gate: true       # ← 범위 게이트 켜기
-  min_range_atr: 0.60        # (고-저) ≥ 0.6×ATR 이면 OK
-  cooloff_bars: 2
+  use_range_gate: true
+  adx_min: 26              # 24→26
+  ema_slope_min: 0.05      # 0.04→0.05
+  min_range_atr: 0.58      # 0.50→0.58
+  # 적응형 스위치 버퍼(ADX가 약하면 엄격모드로 전환)
+  adx_strict_buffer: 0.20
+  cooloff_bars: 3          # 2→3 (촙 연속 진입 완화)
 
 scoring:
   # 모든 서브스코어는 -1..+1 클램프
   weights:
-    trend: 0.45
-    momentum: 0.35
+    trend: 0.50
+    momentum: 0.25
     volatility: 0.10
-    regime: 0.10
+    regime: 0.15
 
 thresholds:
   cand_score_min: 0.02
@@ -49,7 +50,7 @@ risk:
   atr_tp: [1.2, 1.3, 1.5]
   atr_sl: 1.0
   trail_k: 0.6
-  max_hold_min: 720   # 12h (15m 기준 48봉)
+  max_hold_min: 180           # 12h → 3h로 완화(초기 MDD 방지)
 
 output:
   trades_csv: "logs/trades.csv"
@@ -57,10 +58,8 @@ output:
 
 debug:
   auto_thresholds:
-    cand_pct: 0.70   # cand = score 상위 30%
-    enter_pct: 0.85  # enter = score 상위 15%
-  no_gate: false                 # ← 게이트(gate_ok) 무시하고 cand=score>=cand_thr
-  force_cand_from_score: true   # ← 점수 백분위로 cand 강제 (no_gate가 우선)
-  force_pct: 0.75               # 상위 25% cand
-  log_breakdown: true           # 분해 통계 로그 기록
-
+    cand_pct: 0.83            # cand = 상위 22%
+    enter_pct: 0.92           # enter = 상위 12%
+  no_gate: false
+  force_cand_from_score: false  # ★ 게이트 우회 금지
+  log_breakdown: true

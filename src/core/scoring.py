@@ -2,78 +2,67 @@
 from __future__ import annotations
 import polars as pl
 
-def _col(df: pl.DataFrame, name: str, default: float = 0.0) -> pl.Series:
-    """df[name]이 없으면 길이 맞는 기본 시리즈 리턴."""
-    if name in df.columns:
-        return df[name]
-    n = len(df)
-    return pl.Series(name, [default] * n)
-
 def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     w = cfg.get("scoring", {}).get("weights", {})
     g = cfg.get("gates", {})
+    ind = cfg.get("indicators", {})
 
-    # ---- 필요한 컬럼 확보(없으면 안전 기본값) ----
-    ema_slope = _col(df, "ema21_slope_n")
-    rsi_n     = _col(df, "rsi_n")
-    adx_n     = _col(df, "adx_n")
-    atr_p     = _col(df, "atr_p")
-    high      = _col(df, "high")
-    low       = _col(df, "low")
-    atr_col   = f"atr{cfg['indicators']['atr']}"
-    atr       = _col(df, atr_col)
+    # ----- 스코어 구성요소 (Expr로 통일) -----
+    trend_expr = pl.col("ema21_slope_n").clip(-1, 1)
+    mom_expr   = pl.col("rsi_n").clip(-1, 1)
 
-    # ---- 점수(score) 계산: 기존 로직을 그대로 보존 ----
-    trend = ema_slope.clip(-1, 1)
-    mom   = rsi_n.clip(-1, 1)
-
-    # 과열 페널티: 1 - (ATR% / q90), 0으로 나누기/비정상 q90 보호
+    # vol: 과열 패널티. q90은 스칼라(float)로 미리 뽑아 Expr에 끼운다.
     try:
-        q90 = float(atr_p.quantile(0.9)) if len(atr_p) else 1.0
+        q90 = float(df["atr_p"].quantile(0.9)) if "atr_p" in df.columns and df.height else 1.0
     except Exception:
         q90 = 1.0
-    if not q90 or q90 != q90:  # 0 또는 NaN 방지
+    if not q90 or q90 != q90:
         q90 = 1.0
-    vol   = (1 - (atr_p / q90)).clip(-1, 1)
+    vol_expr = (1 - (pl.col("atr_p") / q90)).clip(-1, 1)
 
-    reg   = adx_n.clip(-1, 1)
+    reg_expr = pl.col("adx_n").clip(-1, 1)
 
-    denom = (
-        float(w.get("trend", 1))
-        + float(w.get("momentum", 1))
-        + float(w.get("volatility", 1))
-        + float(w.get("regime", 1))
-    )
+    denom = float(w.get("trend", 1)) + float(w.get("momentum", 1)) + float(w.get("volatility", 1)) + float(w.get("regime", 1))
     if denom <= 0:
         denom = 1.0
 
-    score = (
-        float(w.get("trend", 1))      * trend
-        + float(w.get("momentum", 1)) * mom
-        + float(w.get("volatility", 1))* vol
-        + float(w.get("regime", 1))   * reg
+    score_expr = (
+        float(w.get("trend", 1))      * trend_expr +
+        float(w.get("momentum", 1))   * mom_expr   +
+        float(w.get("volatility", 1)) * vol_expr   +
+        float(w.get("regime", 1))     * reg_expr
     ) / denom
-    score = score.clip(-1, 1)
+    score_expr = score_expr.clip(-1, 1).alias("score")
 
-    # ---- 게이트: 옵션별 on/off 가능 ----
+    # ----- 게이트 조건 (Expr로 통일) -----
     use_adx   = bool(g.get("use_adx_gate", True))
     use_trend = bool(g.get("use_trend_gate", True))
-    use_range = bool(g.get("use_range_gate", False))  # 새로 추가: 범위 게이트
+    use_range = bool(g.get("use_range_gate", True))
 
-    # 임계값
-    adx_min = float(g.get("adx_min", 20.0))       # ADX(0..100) 스케일
-    adx_thr_norm = adx_min / 50.0 - 1.0           # [-1, +1] 정규화된 adx_n과 비교
-    ema_min = float(g.get("ema_slope_min", 0.0))  # [-1, +1]에서의 최소 기울기
-    k_range = float(g.get("min_range_atr", 0.0))  # (high-low) >= k_range * ATR
+    adx_min  = float(g.get("adx_min", 26.0))          # 0..100
+    ema_min  = float(g.get("ema_slope_min", 0.05))    # -1..1 정규화 구간
+    k_range  = float(g.get("min_range_atr", 0.58))    # (H-L) >= k*ATR
+    adx_buf  = float(g.get("adx_strict_buffer", 0.20))
 
-    # 각 게이트(없으면 True로 대체)
-    chop_ok  = (adx_n >= adx_thr_norm) if use_adx else pl.Series([True] * len(df))
-    trend_ok = (ema_slope >= ema_min)  if use_trend else pl.Series([True] * len(df))
-    range_ok = ((high - low) >= k_range * atr) if use_range else pl.Series([True] * len(df))
+    adx_thr_norm = adx_min / 50.0 - 1.0               # [-1..1]로 정규화된 임계
 
-    gate_ok = (chop_ok & trend_ok & range_ok).fill_null(False)
+    atr_col = f"atr{ind.get('atr', 14)}"
 
-    return df.with_columns([
-        pl.Series("score", score),
-        pl.Series("gate_ok", gate_ok),
-    ])
+    cond_adx_expr   = (pl.col("adx_n") >= adx_thr_norm)                  if use_adx   else pl.lit(True)
+    cond_trend_expr = (pl.col("ema21_slope_n") >= ema_min)               if use_trend else pl.lit(True)
+    cond_range_expr = ((pl.col("high") - pl.col("low")) >= k_range * pl.col(atr_col)) if use_range else pl.lit(True)
+
+    sum_true_expr = (
+        cond_adx_expr.cast(pl.UInt8) +
+        cond_trend_expr.cast(pl.UInt8) +
+        cond_range_expr.cast(pl.UInt8)
+    )
+
+    # ADX가 약하면 3-of-3, 강하면 2-of-3  →  k_needed = 2 + need_strict(0/1)
+    need_strict_expr = (pl.col("adx_n") < (adx_thr_norm + adx_buf)).cast(pl.UInt8)
+    k_needed_expr    = pl.lit(2) + need_strict_expr
+
+    gate_ok_expr = (sum_true_expr >= k_needed_expr).alias("gate_ok")
+
+    # ----- 컬럼 추가 -----
+    return df.with_columns([score_expr, gate_ok_expr])
