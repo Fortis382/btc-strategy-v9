@@ -1,0 +1,14 @@
+{
+  "winrate": 0.0,
+  "pf": 0,
+  "expR": 0.0,
+  "mdd_R": 0.0,
+  "avg_hold_bars": 0,
+  "thr_used": {
+    "cand": 0.62,
+    "enter": 0.66
+  },
+  "counts": {
+    "trades": 0
+  }
+}
