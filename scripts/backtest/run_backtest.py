@@ -319,12 +319,32 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     # thresholds
     thr_c, thr_e, thr_info = compute_thresholds(df["score"], cfg)
 
+    # === Regime-biased score (추세 구간 편향) ===
+    # YAML에서 없으면 기본값 0.02/0.04 사용
+    bias_c = float(cfg.get("scoring", {}).get("bias_trend_cand", 0.02))
+    bias_e = float(cfg.get("scoring", {}).get("bias_trend_enter", 0.04))
+
+    df = df.with_columns([
+        pl.when((pl.col("adx_n") >= 0.0) & (pl.col("ema21_slope_n") > 0.0))
+          .then(pl.col("score") + pl.lit(bias_e))
+          .otherwise(pl.col("score"))
+          .alias("score_enter"),
+
+        pl.when((pl.col("adx_n") >= 0.0) & (pl.col("ema21_slope_n") > 0.0))
+          .then(pl.col("score") + pl.lit(bias_c))
+          .otherwise(pl.col("score"))
+          .alias("score_cand"),
+    ])
+
     # masks
     g = cfg["gates"]
     dbg = cfg.get("debug", {})
     base_gate = df["gate_ok"] | pl.Series([dbg.get("no_gate", False)] * len(df))
-    cand_mask = (df["score"] >= thr_c)
-    enter_mask = (df["score"] >= thr_e)
+
+    # ← cand는 score_cand, enter는 score_enter 사용
+    cand_mask = (df["score_cand"] >= thr_c)
+    enter_mask = (df["score_enter"] >= thr_e)
+
     if g.get("cooloff_bars", 0) > 0:
         cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
 
