@@ -20,17 +20,17 @@ indicators:
 gates:
   require_mtf: false
   use_adx_gate: true
-  adx_min: 25            # 20→22로 상향 (촙 컷)
+  adx_min: 20            # 20→22로 상향 (촙 컷)
   use_trend_gate: true
-  ema_slope_min: 0.05      # 0.06
-  ema_slope_min_chop: 0.09 # 0.10
+  ema_slope_min: 0.03      # 0.06
+  ema_slope_min_chop: 0.06 # 0.10
   use_range_gate: true
-  min_range_atr: 0.65    # 0.60
+  min_range_atr: 0.50    # 0.60
   range_on_bars: 3
-  cooloff_bars: 2
+  cooloff_bars: 1
   align_price_ema: true
   use_dev_guard: true
-  max_dev_atr: 0.50    # 0.60
+  max_dev_atr: 0.80    # 0.60
   
   # 신규 게이트
   use_adx_slope_gate: true
@@ -46,7 +46,7 @@ gates:
   allow_sessions: ["asia","eu","us"]
 
 scoring:
-  weights: { trend: 0.35, momentum: 0.35, volatility: 0.10, regime: 0.20 } # 0.45, 0.45, 0.10, 0.10
+  weights: { trend: 0.25, momentum: 0.25, volatility: 0.15, regime: 0.20, paricipation: 0.20, location: 0.15 } # 0.45, 0.45, 0.10, 0.10
   vol_mode: "q90"   # "q90" | "iqr" (iqr로 바꾸면 과열 판정 더 보수적)
   bias_trend_cand: 0.02
   bias_trend_enter: 0.04 
