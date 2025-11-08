@@ -20,17 +20,17 @@ indicators:
 gates:
   require_mtf: false
   use_adx_gate: true
-  adx_min: 27            # 20→22로 상향 (촙 컷)
+  adx_min: 25            # 20→22로 상향 (촙 컷)
   use_trend_gate: true
   ema_slope_min: 0.05      # 0.06
   ema_slope_min_chop: 0.09 # 0.10
   use_range_gate: true
-  min_range_atr: 0.60    # 0.60
+  min_range_atr: 0.65    # 0.60
   range_on_bars: 3
   cooloff_bars: 2
   align_price_ema: true
   use_dev_guard: true
-  max_dev_atr: 0.60    # 0.60
+  max_dev_atr: 0.50    # 0.60
   
   # 신규 게이트
   use_adx_slope_gate: true

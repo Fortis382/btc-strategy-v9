@@ -19,17 +19,22 @@ def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     vol_ref = float(df["atr_p"].quantile(0.90)) if df.height else 1.0
     vol_sc  = (1.0 - (pl.col("atr_p") / (vol_ref + _EPS))).clip(-1.0, 1.0)
 
-    w_tr = float(w.get("trend",      0.40))
-    w_mo = float(w.get("momentum",   0.25))
-    w_vo = float(w.get("volatility", 0.10))
-    w_re = float(w.get("regime",     0.25))
-    w_sum = (w_tr + w_mo + w_vo + w_re) or 1.0
-
+    participation_n = pl.col("participation_n").clip(-1, 1)
+    location_n = pl.col("location_n").clip(-1, 1)
+    
+    w_tr = float(w.get("trend", 0.25))
+    w_mo = float(w.get("momentum", 0.25))
+    w_vo = float(w.get("volatility", 0.15))
+    w_pa = float(w.get("participation", 0.20))  # 신규
+    w_lo = float(w.get("location", 0.15))       # 신규
+    w_sum = (w_tr + w_mo + w_vo + w_pa + w_lo) or 1.0
+    
     score = (
         w_tr * slope_n +
-        w_mo * rsi_n   +
-        w_vo * vol_sc  +
-        w_re * adx_n
+        w_mo * rsi_n +
+        w_vo * vol_sc +
+        w_pa * participation_n +  # 신규
+        w_lo * location_n         # 신규
     ) / w_sum
 
     # ---------- 게이트 ----------

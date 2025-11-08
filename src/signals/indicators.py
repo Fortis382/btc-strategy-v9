@@ -73,12 +73,24 @@ def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
         ema_slope_pct_expr.alias("ema21_slope_pct"),
     ])
 
-    # …그 다음 블록에서 해당 컬럼을 참조 (버전 안전)
+    # ===== 5) Participation (거래량 Z-score) =====
+    vol_ma = pl.col("volume").rolling_mean(window_size=50)
+    vol_std = pl.col("volume").rolling_std(window_size=50) + _EPS
+    participation_raw = ((pl.col("volume") - vol_ma) / vol_std).alias("participation_raw")
+    
+    # ===== 6) Location (Close 위치 in 20봉 range) =====
+    high_20 = pl.col("high").rolling_max(window_size=20)
+    low_20 = pl.col("low").rolling_min(window_size=20)
+    location_raw = (
+        (pl.col("close") - low_20) / (high_20 - low_20 + _EPS)
+    ).alias("location_raw")
+    
+    lf = lf.with_columns([participation_raw, location_raw])
+    
+    # 정규화 [-1, 1]
     lf = lf.with_columns([
-        _clamp(ema_slope_pct_expr / (slope_norm + _EPS), -1.0, 1.0).alias("ema21_slope_n"),
-        ((pl.col(f"atr{alen}_abs") / (pl.col("close") + _EPS)) * 100.0).alias("atr_p"),
-        _clamp((pl.col(f"rsi{rlen}") - 50.0) / 50.0, -1.0, 1.0).alias("rsi_n"),
-        _clamp(pl.col(f"adx{dlen}") / 50.0 - 1.0, -1.0, 1.0).alias("adx_n"),
+        _clamp(pl.col("participation_raw"), -1.0, 1.0).alias("participation_n"),
+        _clamp(pl.col("location_raw") * 2.0 - 1.0, -1.0, 1.0).alias("location_n"),
     ])
-
+    
     return lf.collect()
