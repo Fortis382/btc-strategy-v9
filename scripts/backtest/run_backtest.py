@@ -10,146 +10,32 @@ from typing import Dict, Any, Tuple, Optional
 import polars as pl
 import yaml
 
-# --- project root on sys.path (robust) ---
 _THIS = Path(__file__).resolve()
-_ROOT = _THIS.parents[2]  # .../btc-v9
+_ROOT = _THIS.parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
     
-# 버전 무관 dtype 체크 유틸
 _INT_DTYPES = {pl.Int8, pl.Int16, pl.Int32, pl.Int64, pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64}
 
 def _is_int_dtype(dt: pl.PolarsDataType) -> bool:
     return dt in _INT_DTYPES
 
-# Now safe to import our modules
 from src.signals.indicators import add_indicators
 from src.core.scoring import score_and_gate
 
-from typing import Optional, List
-import polars as pl
-from pathlib import Path
-
-def _collect_parquet_files(path: Path) -> List[str]:
-    """path가 디렉터리면 재귀로 *.parquet/*.parq/*.pq 수집, 파일이면 그대로."""
-    if path.is_dir():
-        exts = ("*.parquet", "*.parq", "*.pq")
-        files: List[str] = []
-        for ext in exts:
-            files += [str(p) for p in path.rglob(ext)]
-        return files
-    elif path.is_file():
-        return [str(path)]
-    return []
-
-def _read_parquet_any(path: Path) -> Optional[pl.DataFrame]:
-    files = _collect_parquet_files(path)
-    if not files:
-        return None
-    # 여러 파일을 한 번에 로드 (스키마 자동 합치기)
-    return pl.read_parquet(files, use_pyarrow=True)
-
-def _standardize_ohlcv(df: pl.DataFrame) -> pl.DataFrame:
-    if df.height == 0:
-        return df
-
-    # 1) 전체 소문자
-    lower_map = {c: c.lower() for c in df.columns}
-    df = df.rename(lower_map)
-    cols = set(df.columns)
-
-    # 2) 동의어 매핑
-    rename_map = {}
-    for c in ("ts", "timestamp", "time", "date", "datetime"):
-        if c in cols:
-            rename_map[c] = "ts"
-            break
-    for tgt, alts in {
-        "open":  ["open", "o"],
-        "high":  ["high", "h", "hi"],
-        "low":   ["low", "l", "lo"],
-        "close": ["close", "c", "adj_close", "close_price"],
-    }.items():
-        for a in alts:
-            if a in cols:
-                rename_map[a] = tgt
-                break
-    for a in ("volume", "vol", "base_volume", "volume_usdt", "quote_volume"):
-        if a in cols:
-            rename_map[a] = "volume"
-            break
-
-    df = df.rename(rename_map)
-    cols = set(df.columns)
-
-    # 3) ts → pl.Datetime 정규화 (정수 에폭 ms/s 및 문자열 지원)
-    if "ts" in cols:
-        ts_s = df["ts"]
-        dt = ts_s.dtype
-        if _is_int_dtype(dt):
-            mx = int(ts_s.max()) if ts_s.len() else 0
-            if mx > 1_000_000_000_000:  # epoch ms
-                df = df.with_columns(pl.from_epoch(pl.col("ts"), unit="ms").alias("ts"))
-            elif mx > 1_000_000_000:    # epoch s
-                df = df.with_columns(pl.from_epoch(pl.col("ts"), unit="s").alias("ts"))
-            else:
-                # 이미 초 단위보다 작은 값이거나 특수케이스면 그대로 둠
-                pass
-        elif dt == pl.Utf8:
-            # 엄격하지 않은 문자열 → datetime 파싱
-            df = df.with_columns(pl.col("ts").str.to_datetime(strict=False).alias("ts"))
-        # Datetime/Date면 그대로 둠
-
-    return df.sort("ts")
-
-# ---------- utils ----------
 def load_cfg(path: Path) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
-    data_cfg = cfg["data"]
-    p1 = (_ROOT / data_cfg["path_primary"]).resolve()
-    p2 = (_ROOT / data_cfg["path_fallback"]).resolve()
-
-    df: Optional[pl.DataFrame] = None
-
-    # 1) 1순위: partitioned 디렉터리(재귀)
-    if p1.exists():
-        df = _read_parquet_any(p1)
-
-    # 2) 2순위: fallback 파일/디렉터리
-    if df is None and p2.exists():
-        df = _read_parquet_any(p2)
-
-    if df is None or df.width == 0:
-        raise FileNotFoundError(
-            f"No readable parquet found. Checked:\n  - {p1}\n  - {p2}"
-        )
-
-    # 표준화(ts/ohlc/volume + ts 타입)
-    df = _standardize_ohlcv(df)
-
-    # 날짜 슬라이싱
-    start = data_cfg.get("start") or None
-    end = data_cfg.get("end") or None
-    if start:
-        df = df.filter(pl.col("ts") >= pl.lit(start))
-    if end:
-        df = df.filter(pl.col("ts") <= pl.lit(end))
-
-    # 필수 컬럼 검사
-    need = {"ts", "open", "high", "low", "close", "volume"}
-    missing = need - set(df.columns)
-    if missing:
-        # 문제 상황 디버그용: 현재 컬럼 리스트를 같이 보여줌
-        raise KeyError(
-            f"Missing columns in OHLCV: {missing}\n"
-            f"Existing columns: {list(df.columns)[:30]}"
-        )
-
-    return df.select(["ts", "open", "high", "low", "close", "volume"] + 
-                     [c for c in df.columns if c not in ("ts","open","high","low","close","volume")])
+    from src.core.loader_polars import load_ohlcv as _load
+    return _load(
+        _ROOT,
+        cfg["data"]["path_primary"],
+        cfg["data"]["path_fallback"],
+        cfg["data"].get("start"),
+        cfg["data"].get("end")
+    )
 
 def quantile(series: pl.Series, pct: float) -> float:
     return float(series.quantile(pct))
@@ -162,7 +48,70 @@ def save_csv(df: pl.DataFrame, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     df.write_csv(str(path))
 
+# scripts/backtest/run_backtest.py 수정 (compute_thresholds 함수 교체)
+
+def compute_thresholds_ewq(
+    df: pl.DataFrame,
+    cfg: Dict[str, Any]
+) -> Tuple[float, float, Dict[str, Any]]:
+    """
+    EWQ 기반 동적 임계값 계산
+    
+    Returns:
+        thr_c: cand 임계 (마지막 phi 값)
+        thr_e: enter 임계 (phi + bias)
+        info: 디버깅 정보
+    """
+    from src.signals.ewq_numba import ewq_batch_numba
+    import numpy as np
+    
+    # EWQ 파라미터
+    ewq_cfg = cfg.get("ewq", {})
+    q_init = float(ewq_cfg.get("initial_threshold", 70.0))
+    theta = float(ewq_cfg.get("theta", 0.7))
+    alpha = float(ewq_cfg.get("alpha", 0.05))
+    daily_cap = float(ewq_cfg.get("daily_cap", 0.03))
+    tf_per_day = int(ewq_cfg.get("tf_per_day", 96))
+    
+    # 스코어를 [-100, 100] 범위로 스케일링 (EWQ가 이해하기 쉬운 범위)
+    scores_norm = df["score"].to_numpy() * 100.0  # [-1,1] → [-100,100]
+    
+    # EWQ 계산
+    phis = ewq_batch_numba(q_init, scores_norm, theta, alpha, daily_cap, tf_per_day)
+    
+    # 마지막 phi를 임계값으로 사용
+    thr_c = float(phis[-1] / 100.0)  # [-100,100] → [-1,1]
+    
+    # Enter는 bias 추가
+    bias = float(cfg["scoring"].get("bias_trend_enter", 0.04))
+    thr_e = thr_c + bias
+    
+    return thr_c, thr_e, {
+        "thr_mode": "ewq",
+        "q_init": q_init,
+        "theta": theta,
+        "alpha": alpha,
+        "daily_cap": daily_cap,
+        "phi_last": phis[-1],
+        "thr_c_ewq": thr_c,
+        "thr_e_ewq": thr_e,
+    }
+
+# 58번째 줄 이후에 추가
+
 def compute_thresholds(scores: pl.Series, cfg: Dict[str, Any]) -> Tuple[float, float, Dict[str, Any]]:
+    """
+    기존 분위 기반 임계값 계산
+    
+    Args:
+        scores: 스코어 Series (gate_ok 필터링된 값)
+        cfg: 설정
+    
+    Returns:
+        thr_c: cand 임계값
+        thr_e: enter 임계값
+        info: 디버깅 정보
+    """
     dbg = cfg.get("debug", {})
     auto = dbg.get("auto_thresholds", {"cand_pct": 0.75, "enter_pct": 0.85})
     cand_pct = float(auto.get("cand_pct", 0.75))
@@ -181,9 +130,8 @@ def compute_thresholds(scores: pl.Series, cfg: Dict[str, Any]) -> Tuple[float, f
         "thr_c_auto": thr_c,
         "thr_e_auto": thr_e,
     }
-
+    
 def cooloff_mask(mask: pl.Series, bars: int) -> pl.Series:
-    """Zero out `bars` bars after every True in mask."""
     if bars <= 0:
         return mask
     arr = mask.to_list()
@@ -204,10 +152,8 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     close = df["close"]
     atr = df[atr_col_abs]
 
-    # RR 설계
     tp_R = [float(x) for x in risk.get("atr_tp", [1.2, 1.3, 1.5])]
     sl_R = float(risk.get("atr_sl", 1.0))
-    # TF=15m 가정: 분 단위 제한을 15분봉 수로 환산
     max_hold_bars = int(risk.get("max_hold_min", 720) // 15)
 
     rows = []
@@ -224,31 +170,30 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
             j = i + 1
             rr = 0.0
             reason = "timeout"
-            # 최대 보유 바 or 데이터 끝 중 먼저 오는 곳까지 스캔
-            while j < n and (j - i) <= max_hold_bars:
+            
+            # ✅ 수정: < max_hold_bars (이전 <=에서 변경)
+            while j < n and (j - i) < max_hold_bars:
                 hi = float(df["high"][j])
                 lo = float(df["low"][j])
 
-                # 손절 선체크(우선순위)
                 if lo <= sl_level:
                     rr = -sl_R
                     reason = "sl"
                     break
 
-                # 분할 익절 레벨 히트 체크(가장 이른 히트)
                 hit_idx = None
                 for k, tp in enumerate(tp_levels, start=1):
                     if hi >= tp:
                         hit_idx = k
                         break
                 if hit_idx is not None:
-                    rr = float(tp_R[hit_idx - 1] / sl_R)  # R 단위 기대값
+                    # ✅ 수정: / sl_R 제거
+                    rr = float(tp_R[hit_idx - 1])
                     reason = f"tp{hit_idx}"
                     break
 
                 j += 1
 
-            # j == i+1이며 while 한 번도 못 돌면 j-1 접근 안전하게 보정
             last_idx = (j - 1) if j > i else i
             rows.append((
                 df["ts"][i],
@@ -259,11 +204,10 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
                 int(j - i),
                 float(rr),
             ))
-            i = j  # 포지션 소모 후 다음으로 점프
+            i = j
         else:
             i += 1
 
-    # === 결과 테이블 구성 (경고 제거 + dtype 명시) ===
     schema = {
         "entry_ts": pl.Datetime,
         "entry": pl.Float64,
@@ -282,7 +226,6 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
         result = {"winrate": 0.0, "pf": 0.0, "expR": 0.0, "mdd_R": 0.0, "avg_hold_bars": 0}
         return trades, result
 
-    # 기본 성과
     wins = trades.filter(pl.col("rr") > 0)
     losses = trades.filter(pl.col("rr") < 0)
     gross_win = float(wins["rr"].sum()) if wins.height else 0.0
@@ -293,9 +236,8 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     expR = float(trades["rr"].mean())
     avg_hold = int(float(trades["bars"].mean()))
 
-    # === 에쿼티 곡선 & MDD 계산 (Polars API 호환) ===
     rr_series = trades["rr"].fill_null(0.0)
-    eq = rr_series.cum_sum()             # <- 핵심 수정: cumsum() → cum_sum()
+    eq = rr_series.cum_sum()
     peak = eq.cum_max()
     dd = (peak - eq)
     mdd_R = float(dd.max()) if dd.len() > 0 else 0.0
@@ -316,47 +258,50 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     df = add_indicators(df, cfg)
     df = score_and_gate(df, cfg)
 
-    # ---------- thresholds (GATE-AWARE) ----------
+    # ===== 임계값 계산 (EWQ vs 기존) =====
     dbg = cfg.get("debug", {})
-    use_gate = not bool(dbg.get("no_gate", False))
-
-    if use_gate:
-        # 게이트 통과 집합에서만 분위 임계 계산
-        score_pool = df.filter(pl.col("gate_ok"))["score"]
-        pool_tag = "gate_ok"
+    use_ewq = bool(cfg.get("use_ewq", False))  # ✅ 신규: EWQ 플래그
+    
+    if use_ewq:
+        # EWQ 동적 임계값
+        thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg)
+        pool_tag = "ewq"
     else:
-        score_pool = df["score"]
-        pool_tag = "all"
+        # 기존 분위 기반
+        use_gate = not bool(dbg.get("no_gate", False))
+        
+        if use_gate:
+            score_pool = df.filter(pl.col("gate_ok"))["score"]
+            pool_tag = "gate_ok"
+        else:
+            score_pool = df["score"]
+            pool_tag = "all"
+        
+        thr_c, thr_e, thr_info = compute_thresholds(score_pool, cfg)
 
-    thr_c, thr_e, thr_info = compute_thresholds(score_pool, cfg)
-    # 디버깅 보조 정보
     thr_info.update({
         "pool": pool_tag,
         "pool_size": int(score_pool.len()),
     })
 
-    # ---------- score aliases (bias 없음) ----------
     df = df.with_columns([
         pl.col("score").alias("score_enter"),
         pl.col("score").alias("score_cand"),
     ])
 
-    # ---------- masks ----------
     g = cfg["gates"]
 
     if use_gate:
-        base_gate = df["gate_ok"]  # 게이트 적용
+        base_gate = df["gate_ok"]
     else:
-        base_gate = pl.Series([True] * len(df), dtype=pl.Boolean)  # 게이트 무시
+        base_gate = pl.Series([True] * len(df), dtype=pl.Boolean)
 
     cand_mask = (df["score_cand"] >= thr_c)
     enter_mask = (df["score_enter"] >= thr_e)
 
-    # cand 쿨오프(있으면)
     if int(g.get("cooloff_bars", 0)) > 0:
         cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
 
-    # 게이트 적용
     cand_mask = cand_mask & base_gate
     enter_mask = enter_mask & base_gate
 
@@ -365,7 +310,6 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
         pl.Series("enter_mask", enter_mask),
     ])
 
-    # reporting
     stats = {
         "score_q25": float(df["score"].quantile(0.25)),
         "score_q50": float(df["score"].quantile(0.50)),

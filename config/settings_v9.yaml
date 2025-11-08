@@ -46,7 +46,12 @@ gates:
   allow_sessions: ["asia","eu","us"]
 
 scoring:
-  weights: { trend: 0.25, momentum: 0.25, volatility: 0.15, regime: 0.20, paricipation: 0.20, location: 0.15 } # 0.45, 0.45, 0.10, 0.10
+  weights:
+    trend: 0.25
+    momentum: 0.25
+    volatility: 0.15
+    participation: 0.20  # ✅ 신규
+    location: 0.15       # ✅ 신규
   vol_mode: "q90"   # "q90" | "iqr" (iqr로 바꾸면 과열 판정 더 보수적)
   bias_trend_cand: 0.02
   bias_trend_enter: 0.04 
@@ -83,3 +88,9 @@ debug:
 
 session:
   tz_offset_hours: 0
+
+validation:
+  cpcv_splits: 5          # 전체 분할 수
+  cpcv_test_groups: 2     # 각 fold의 test 그룹 수 (C(5,2)=10 folds)
+  embargo_pct: 0.01       # Embargo 1%
+  bootstrap_samples: 1000 # Bootstrap 샘플 수 (별도)

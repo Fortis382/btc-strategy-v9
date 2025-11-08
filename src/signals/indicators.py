@@ -5,19 +5,16 @@ import polars as pl
 _EPS = 1e-12
 
 def _clamp(expr: pl.Expr, lo: float, hi: float) -> pl.Expr:
-    # polars 전버전 호환: clip(lower=,upper=) 대신 수평 max/min 사용
     return pl.min_horizontal(pl.max_horizontal(expr, pl.lit(lo)), pl.lit(hi))
 
 def _clip_lower(expr: pl.Expr, lo: float) -> pl.Expr:
-    # polars 전버전 호환: clip_min 대체
     return pl.max_horizontal(expr, pl.lit(lo))
 
 def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     """
-    9.4v 계약 컬럼 보장:
-      ema21_slope_pct, ema21_slope_n, atr_p, rsi_n, adx_n
-    + 기본: ema{fast}, ema{slow}, rsi{rlen}, atr{alen}_abs, adx{dlen}
-    (config는 ema: [21,55] 가정. fast=21 기준으로 'ema21_*' 네이밍 고정)
+    v9.4 완전 호환 지표 계산
+    - 5-factor: trend/momentum/volatility/participation/location
+    - 기본: ema{fast}, ema{slow}, rsi{rlen}, atr{alen}_abs, adx{dlen}
     """
     ema_fast, ema_slow = cfg["indicators"]["ema"]
     rlen = int(cfg["indicators"]["rsi"])
@@ -33,7 +30,7 @@ def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
         pl.col("close").ewm_mean(span=ema_slow).alias(f"ema{ema_slow}"),
     ])
 
-    # 2) RSI (버전 호환: clip_min 대신 max_horizontal)
+    # 2) RSI
     diff = pl.col("close").diff()
     gain = pl.when(diff > 0).then(diff).otherwise(0.0)
     loss = pl.when(diff < 0).then(-diff).otherwise(0.0)
@@ -42,7 +39,7 @@ def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     rs = avg_gain / avg_loss
     rsi = (100.0 - (100.0 / (1.0 + _clip_lower(rs, 0.0)))).alias(f"rsi{rlen}")
 
-    # 3) ATR(절대)
+    # 3) ATR (절대)
     tr = pl.max_horizontal(
         (pl.col("high") - pl.col("low")),
         (pl.col("high") - pl.col("close").shift(1)).abs(),
@@ -61,36 +58,44 @@ def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     dx  = ((pdi - mdi).abs() / ((pdi + mdi).abs() + _EPS)) * 100.0
     adx = dx.ewm_mean(span=dlen).alias(f"adx{dlen}")
 
-    # 1차 컬럼 주입
     lf = lf.with_columns([rsi, atr_abs, adx])
 
-    # 5) 파생/정규화 — 같은 블록 내 alias 참조 금지! (표현식 재사용)
+    # 5) EMA slope (pct)
     ema_fast_col = pl.col(f"ema{ema_fast}")
     ema_slope_pct_expr = ((ema_fast_col / ema_fast_col.shift(1) - 1.0) * 100.0).fill_null(0.0)
+    lf = lf.with_columns([ema_slope_pct_expr.alias("ema21_slope_pct")])
 
-    lf = lf.with_columns([
-        # 먼저 pct를 물리 컬럼으로 만든 다음…
-        ema_slope_pct_expr.alias("ema21_slope_pct"),
-    ])
-
-    # ===== 5) Participation (거래량 Z-score) =====
+    # 6) Participation (거래량 Z-score) ✅ 신규
     vol_ma = pl.col("volume").rolling_mean(window_size=50)
     vol_std = pl.col("volume").rolling_std(window_size=50) + _EPS
     participation_raw = ((pl.col("volume") - vol_ma) / vol_std).alias("participation_raw")
-    
-    # ===== 6) Location (Close 위치 in 20봉 range) =====
+    lf = lf.with_columns([participation_raw])
+
+    # 7) Location (Close 위치 in 20봉 range) ✅ 신규
     high_20 = pl.col("high").rolling_max(window_size=20)
     low_20 = pl.col("low").rolling_min(window_size=20)
     location_raw = (
         (pl.col("close") - low_20) / (high_20 - low_20 + _EPS)
     ).alias("location_raw")
-    
-    lf = lf.with_columns([participation_raw, location_raw])
-    
-    # 정규화 [-1, 1]
+    lf = lf.with_columns([location_raw])
+
+    # 8) 정규화 (모든 factor를 [-1, 1])
     lf = lf.with_columns([
+        # ✅ 수정: tanh로 soft clipping (v9.4 문서 기준)
+        (ema_slope_pct_expr / (slope_norm + _EPS)).tanh().alias("ema21_slope_n"),
+        
+        ((pl.col(f"atr{alen}_abs") / (pl.col("close") + _EPS)) * 100.0).alias("atr_p"),
+        
+        _clamp((pl.col(f"rsi{rlen}") - 50.0) / 50.0, -1.0, 1.0).alias("rsi_n"),
+        
+        # ✅ 수정: ADX 정규화 (0~100 → -1~1, 중심 25)
+        _clamp((pl.col(f"adx{dlen}") - 25.0) / 25.0, -1.0, 1.0).alias("adx_n"),
+        
+        # ✅ 신규: participation 정규화
         _clamp(pl.col("participation_raw"), -1.0, 1.0).alias("participation_n"),
+        
+        # ✅ 신규: location 정규화 (0~1 → -1~1)
         _clamp(pl.col("location_raw") * 2.0 - 1.0, -1.0, 1.0).alias("location_n"),
     ])
-    
+
     return lf.collect()

@@ -44,7 +44,6 @@ def _parse_iso_dt(s: Optional[str]) -> Optional[datetime]:
     return datetime.fromisoformat(s)
 
 def _normalize_ts(df: pl.DataFrame) -> pl.DataFrame:
-    # ts -> pl.Datetime
     ts_dtype = df["ts"].dtype
     if ts_dtype == pl.Datetime:
         return df
@@ -56,7 +55,10 @@ def _normalize_ts(df: pl.DataFrame) -> pl.DataFrame:
         if vmax > 10_000_000_000_000_000: unit = "ns"
         return df.with_columns(pl.from_epoch(pl.col("ts").cast(pl.Int64), unit=unit).alias("ts"))
     if ts_dtype == pl.Utf8:
-        return df.with_columns(pl.col("ts").str.strptime(pl.Datetime, strict=False).alias("ts"))
+        # ✅ 수정: strptime → str.to_datetime (Polars 0.20+)
+        return df.with_columns(
+            pl.col("ts").str.to_datetime(strict=False).alias("ts")
+        )
     return df.with_columns(pl.col("ts").cast(pl.Datetime))
 
 def load_ohlcv(project_root: Path,
