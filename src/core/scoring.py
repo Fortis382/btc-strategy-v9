@@ -84,10 +84,23 @@ def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
         )
         conds.append(pl.col("range_on"))
 
+    # 변동성 필터 (과도 변동성 차단)
+    if g.get("use_vol_filter", False):
+        max_atr_p = float(g.get("max_atr_p", 2.5))
+        conds.append(pl.col("atr_p") <= pl.lit(max_atr_p))
+    
     # 가격–EMA 정렬 (롱 기준)
     if g.get("align_price_ema", True):
         conds.append(pl.col("close") >= pl.col(f"ema{ema_fast}"))
 
+    # ✅ 신규: EMA Bias (정량적)
+    if g.get("use_ema_bias_gate", True):
+        ema_bias_norm = float(cfg["indicators"].get("ema_bias_norm", 0.010))
+        df = df.with_columns(
+            ((pl.col("close") - pl.col(f"ema{ema_fast}")) / pl.col(f"ema{ema_fast}")).alias("ema_bias")
+        )
+        conds.append(pl.col("ema_bias") >= pl.lit(ema_bias_norm))
+    
     # 과열乖리 가드
     if g.get("use_dev_guard", True):
         atr_abs_col = pl.col(f"atr{atr_len}_abs")

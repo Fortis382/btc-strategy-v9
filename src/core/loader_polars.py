@@ -24,18 +24,29 @@ def _collect_valid_files(root: Path) -> List[str]:
     return valids
 
 def _read_any(p: Path) -> pl.DataFrame:
-    """DuckDB로 partitioned Parquet 직접 로드 (15배 빠름)"""
+    """DuckDB로 partitioned Parquet 직접 로드"""
     if p.is_dir():
-        pattern = str(p / "**" / "*.parquet")
+        # ✅ Windows 안전 경로 (forward slash + glob 명시)
+        pattern = str(p).replace("\\", "/") + "/**/*.parquet"
+        
         con = duckdb.connect(":memory:")
-        # DuckDB → PyArrow → Polars (zero-copy)
-        result = con.execute(
-            f"SELECT * FROM read_parquet('{pattern}') ORDER BY ts"
-        ).arrow()
-        con.close()
-        return pl.from_arrow(result)
+        try:
+            result = con.execute(
+                f"SELECT * FROM read_parquet('{pattern}') ORDER BY ts"
+            ).arrow()
+            con.close()
+            return pl.from_arrow(result)
+        except Exception as e:
+            con.close()
+            # DuckDB 실패 시 Polars 직접 로드로 폴백
+            files = _collect_valid_files(p)
+            if not files:
+                raise FileNotFoundError(f"No valid parquet in {p}")
+            return pl.read_parquet(files)
     
-    # 단일 파일은 기존 방식
+    # 단일 파일
+    if not _is_valid_parquet(p):
+        raise FileNotFoundError(f"Invalid parquet: {p}")
     return pl.read_parquet(str(p))
 
 def _parse_iso_dt(s: Optional[str]) -> Optional[datetime]:

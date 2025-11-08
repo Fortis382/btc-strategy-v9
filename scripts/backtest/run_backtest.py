@@ -156,11 +156,26 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     sl_R = float(risk.get("atr_sl", 1.0))
     max_hold_bars = int(risk.get("max_hold_min", 720) // 15)
 
+    # ✅ 신규: MDD Breaker
+    mdd_threshold = float(risk.get("mdd_breaker", 0.05))  # 5%
+    enable_mdd_breaker = bool(risk.get("enable_mdd_breaker", False))
+
     rows = []
     i = 0
     n = len(df)
+    
+    # ✅ 누적 R 추적
+    cumulative_R = 0.0
+    peak_R = 0.0
 
     while i < n:
+        # ✅ MDD Breaker 체크
+        if enable_mdd_breaker:
+            dd_pct = (peak_R - cumulative_R) / (peak_R + 1e-12) if peak_R > 0 else 0.0
+            if dd_pct >= mdd_threshold:
+                print(f"[MDD BREAKER] Triggered at bar {i}, MDD={dd_pct:.2%}")
+                break  # 모든 거래 중단
+        
         if bool(df["enter_mask"][i]):
             entry = float(close[i])
             atr_i = float(atr[i])
@@ -171,7 +186,6 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
             rr = 0.0
             reason = "timeout"
             
-            # ✅ 수정: < max_hold_bars (이전 <=에서 변경)
             while j < n and (j - i) < max_hold_bars:
                 hi = float(df["high"][j])
                 lo = float(df["low"][j])
@@ -187,7 +201,6 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
                         hit_idx = k
                         break
                 if hit_idx is not None:
-                    # ✅ 수정: / sl_R 제거
                     rr = float(tp_R[hit_idx - 1])
                     reason = f"tp{hit_idx}"
                     break
@@ -204,6 +217,12 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
                 int(j - i),
                 float(rr),
             ))
+            
+            # ✅ R 누적 업데이트
+            cumulative_R += rr
+            if cumulative_R > peak_R:
+                peak_R = cumulative_R
+            
             i = j
         else:
             i += 1
@@ -251,6 +270,8 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     }
     return trades, result
 
+# scripts/backtest/run_backtest.py (265~310번째 줄 교체)
+
 def run(cfg_path: Path, quiet: bool = False) -> None:
     cfg = load_cfg(cfg_path)
 
@@ -258,30 +279,30 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     df = add_indicators(df, cfg)
     df = score_and_gate(df, cfg)
 
-    # ===== 임계값 계산 (EWQ vs 기존) =====
+    # ===== 임계값 계산 =====
     dbg = cfg.get("debug", {})
-    use_ewq = bool(cfg.get("use_ewq", False))  # ✅ 신규: EWQ 플래그
+    use_ewq = bool(cfg.get("use_ewq", False))
+    use_gate = not bool(dbg.get("no_gate", False))  # ✅ 항상 정의
     
     if use_ewq:
-        # EWQ 동적 임계값
         thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg)
         pool_tag = "ewq"
+        pool_size = int(df.height)
     else:
-        # 기존 분위 기반
-        use_gate = not bool(dbg.get("no_gate", False))
-        
         if use_gate:
             score_pool = df.filter(pl.col("gate_ok"))["score"]
             pool_tag = "gate_ok"
+            pool_size = int(score_pool.len())
         else:
             score_pool = df["score"]
             pool_tag = "all"
+            pool_size = int(score_pool.len())
         
         thr_c, thr_e, thr_info = compute_thresholds(score_pool, cfg)
-
+    
     thr_info.update({
         "pool": pool_tag,
-        "pool_size": int(score_pool.len()),
+        "pool_size": pool_size,
     })
 
     df = df.with_columns([
@@ -291,6 +312,7 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
 
     g = cfg["gates"]
 
+    # ✅ use_gate 기반 base_gate 생성 (EWQ 무관)
     if use_gate:
         base_gate = df["gate_ok"]
     else:
