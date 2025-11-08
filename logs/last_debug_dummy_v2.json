@@ -1,0 +1,42 @@
+{
+  "winrate": 0.3,
+  "pf": 0.9,
+  "expR": -0.05,
+  "mdd_R": 1.0,
+  "avg_hold_bars": 3,
+  "thr_used": {
+    "cand": 0.607174,
+    "enter": 0.632936
+  },
+  "counts": {
+    "trades": 10
+  },
+  "breakdown": {
+    "stats": {
+      "score_q25": -0.3610765625225411,
+      "score_q50": 0.0908433984594501,
+      "score_q75": 0.4554147813967406,
+      "score_q90": 0.5676579500488804,
+      "ema21_slope_n_mean": 0.053998184780943564,
+      "adx_n_mean": 0.26519291542938606,
+      "rows": 8640,
+      "gate_ok_rows": 1641,
+      "gate_ok_rate": 0.18993055555555555
+    },
+    "counts": {
+      "total_rows": 8640,
+      "score_ge_cand": 501,
+      "score_ge_enter": 332,
+      "gate_ok": 1641,
+      "cand_mask_true": 328
+    },
+    "gate_used": "normal",
+    "thr_mode": "auto_pct",
+    "cand_pct": 0.7,
+    "enter_pct": 0.8,
+    "thr_c_auto": 0.6071744459313653,
+    "thr_e_auto": 0.6329360370875429,
+    "pool": "gate_ok",
+    "pool_size": 1641
+  }
+}

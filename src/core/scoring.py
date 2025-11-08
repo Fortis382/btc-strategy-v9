@@ -47,17 +47,13 @@ def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     # ---------- 게이트 ----------
     conds = []
 
-    # ADX (✅ 수정된 정규화 기준)
+    # ADX
     if g.get("use_adx_gate", True):
         adx_min = float(g.get("adx_min", 25.0))
-        # adx_n = (ADX - 25) / 25 범위 [-1, 1]
-        # ADX 20 → (-5/25) = -0.2
-        # ADX 25 → 0
-        # ADX 30 → 0.2
         adx_thr = (adx_min - 25.0) / 25.0
         conds.append(pl.col("adx_n") >= pl.lit(adx_thr))
 
-    # 동적 slope (촙/트렌드 구분)
+    # 동적 slope
     if g.get("use_trend_gate", True):
         slope_min_base = float(g.get("ema_slope_min", 0.06))
         slope_min_chop = float(g.get("ema_slope_min_chop", 0.10))
@@ -84,23 +80,18 @@ def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
         )
         conds.append(pl.col("range_on"))
 
-    # 변동성 필터 (과도 변동성 차단)
-    if g.get("use_vol_filter", False):
-        max_atr_p = float(g.get("max_atr_p", 2.5))
-        conds.append(pl.col("atr_p") <= pl.lit(max_atr_p))
-    
-    # 가격–EMA 정렬 (롱 기준)
-    if g.get("align_price_ema", True):
-        conds.append(pl.col("close") >= pl.col(f"ema{ema_fast}"))
-
-    # ✅ 신규: EMA Bias (정량적)
+    # ✅ 신규: EMA Bias 정량적 (v9.4 Section 4.3.2)
     if g.get("use_ema_bias_gate", True):
-        ema_bias_norm = float(cfg["indicators"].get("ema_bias_norm", 0.010))
+        ema_bias_norm = float(ind.get("ema_bias_norm", 0.010))
         df = df.with_columns(
-            ((pl.col("close") - pl.col(f"ema{ema_fast}")) / pl.col(f"ema{ema_fast}")).alias("ema_bias")
+            ((pl.col("close") - pl.col(f"ema{ema_fast}")) / (pl.col(f"ema{ema_fast}") + _EPS)).alias("ema_bias")
         )
         conds.append(pl.col("ema_bias") >= pl.lit(ema_bias_norm))
     
+    # 가격–EMA 정렬 (기존, 선택적)
+    if g.get("align_price_ema", False):
+        conds.append(pl.col("close") >= pl.col(f"ema{ema_fast}"))
+
     # 과열乖리 가드
     if g.get("use_dev_guard", True):
         atr_abs_col = pl.col(f"atr{atr_len}_abs")
@@ -109,6 +100,11 @@ def score_and_gate(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
         )
         max_dev = float(g.get("max_dev_atr", 0.60))
         conds.append(pl.col("dev_atr") <= pl.lit(max_dev))
+    
+    # ✅ 신규: 변동성 필터 (v9.4 개선)
+    if g.get("use_vol_filter", False):
+        max_atr_p = float(g.get("max_atr_p", 2.5))
+        conds.append(pl.col("atr_p") <= pl.lit(max_atr_p))
 
     gate_ok = pl.all_horizontal(conds) if conds else pl.lit(True)
 

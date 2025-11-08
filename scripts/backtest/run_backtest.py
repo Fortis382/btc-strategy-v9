@@ -156,25 +156,27 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     sl_R = float(risk.get("atr_sl", 1.0))
     max_hold_bars = int(risk.get("max_hold_min", 720) // 15)
 
-    # ✅ 신규: MDD Breaker
-    mdd_threshold = float(risk.get("mdd_breaker", 0.05))  # 5%
+    # ✅ MDD Breaker
+    mdd_threshold = float(risk.get("mdd_breaker", 0.05))
     enable_mdd_breaker = bool(risk.get("enable_mdd_breaker", False))
 
     rows = []
     i = 0
     n = len(df)
     
-    # ✅ 누적 R 추적
+    # ✅ 수정: 초기값 0.0 (첫 거래 후 업데이트)
     cumulative_R = 0.0
     peak_R = 0.0
 
     while i < n:
-        # ✅ MDD Breaker 체크
-        if enable_mdd_breaker:
-            dd_pct = (peak_R - cumulative_R) / (peak_R + 1e-12) if peak_R > 0 else 0.0
+        # ✅ 수정: MDD 계산 (peak_R > 0일 때만)
+        if enable_mdd_breaker and peak_R > 0:
+            dd_R = peak_R - cumulative_R  # 절대값 (R 단위)
+            dd_pct = dd_R / peak_R
+            
             if dd_pct >= mdd_threshold:
-                print(f"[MDD BREAKER] Triggered at bar {i}, MDD={dd_pct:.2%}")
-                break  # 모든 거래 중단
+                print(f"[MDD BREAKER] Triggered at bar {i}, DD={dd_R:.2f}R ({dd_pct:.1%})")
+                break
         
         if bool(df["enter_mask"][i]):
             entry = float(close[i])
@@ -218,7 +220,7 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
                 float(rr),
             ))
             
-            # ✅ R 누적 업데이트
+            # ✅ R 업데이트
             cumulative_R += rr
             if cumulative_R > peak_R:
                 peak_R = cumulative_R
@@ -269,8 +271,6 @@ def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
         "avg_hold_bars": int(avg_hold),
     }
     return trades, result
-
-# scripts/backtest/run_backtest.py (265~310번째 줄 교체)
 
 def run(cfg_path: Path, quiet: bool = False) -> None:
     cfg = load_cfg(cfg_path)
@@ -331,7 +331,24 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
         pl.Series("cand_mask", cand_mask),
         pl.Series("enter_mask", enter_mask),
     ])
-
+    
+    # ✅ 신규: SLO 검증
+    slo = cfg.get("slo", {})
+    if slo.get("enable_validation", False):
+        # 처리 시간 측정 (백테스트 시간 / 데이터 길이)
+        import time
+        t0 = time.perf_counter()
+        trades, result = simple_backtest(df, cfg)
+        t1 = time.perf_counter()
+        
+        processing_time_per_bar = (t1 - t0) / len(df)
+        slo_target = float(slo.get("processing_time_per_bar_s", 0.001))  # 1ms
+        
+        if processing_time_per_bar > slo_target:
+            print(f"[SLO WARN] Processing time: {processing_time_per_bar*1000:.2f}ms > {slo_target*1000:.0f}ms")
+        else:
+            print(f"[SLO OK] Processing time: {processing_time_per_bar*1000:.2f}ms")
+            
     stats = {
         "score_q25": float(df["score"].quantile(0.25)),
         "score_q50": float(df["score"].quantile(0.50)),

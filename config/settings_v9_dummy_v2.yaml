@@ -1,0 +1,105 @@
+# config/settings_v9_dummy_v2.yaml
+# 더미 데이터 전용 + MDD Breaker + 개선된 게이트
+
+data:
+  path_primary: "data/partitioned"
+  path_fallback: "data/processed/BTCUSDT_15m.parquet"
+  symbol: "BTCUSDT"
+  tf: "15m"
+  start: null
+  end: null
+
+indicators:
+  ema: [21, 55]
+  rsi: 14
+  atr: 14
+  adx: 14
+  ema_slope_norm: 0.05
+  ema_bias_norm: 0.010   # ✅ EMA Bias 게이트용
+
+gates:
+  require_mtf: false
+  use_adx_gate: true
+  adx_min: 10
+  
+  use_trend_gate: true
+  ema_slope_min: 0.01
+  ema_slope_min_chop: 0.02
+  
+  use_range_gate: false
+  min_range_atr: 0.40
+  range_on_bars: 3
+  
+  cooloff_bars: 1
+  
+  # ✅ 신규: EMA Bias 정량적
+  use_ema_bias_gate: true
+  align_price_ema: false  # (중복, 비활성화)
+  
+  use_dev_guard: false
+  max_dev_atr: 0.80
+  
+  # ✅ 신규: 변동성 필터
+  use_vol_filter: true
+  max_atr_p: 2.5
+
+scoring:
+  weights:
+    trend: 0.35
+    momentum: 0.35
+    volatility: 0.20
+    participation: 0.05
+    location: 0.05
+  
+  vol_mode: "q90"
+  bias_trend_cand: 0.01
+  bias_trend_enter: 0.02
+
+thresholds:
+  cand_score_min: 0.01
+  enter_score_min: 0.03
+
+risk:
+  R: 0.005
+  max_leverage: 7
+  lev_map:
+    - { min: 0.60, max: 0.65, lev: 2 }
+    - { min: 0.65, max: 0.75, lev: 4 }
+    - { min: 0.75, max: 0.80, lev: 6 }
+    - { min: 0.80, max: 1.00, lev: 7 }
+  
+  # ✅ TP 레벨 상향 (avg_hold 증가)
+  atr_tp: [1.5, 1.8, 2.2]
+  atr_sl: 1.0
+  trail_k: 0.5
+  max_hold_min: 120
+  
+  # ✅ 신규: MDD Breaker
+  enable_mdd_breaker: true
+  mdd_breaker: 0.05  # 5% MDD에서 모든 거래 중단
+
+output:
+  trades_csv: "logs/trades_dummy_v2.csv"
+  dbg_json: "logs/last_debug_dummy_v2.json"
+
+debug:
+  auto_thresholds:
+    cand_pct: 0.70
+    enter_pct: 0.80
+  no_gate: false
+  force_cand_from_score: false
+  force_pct: 0.75
+  log_breakdown: true
+
+session:
+  tz_offset_hours: 0
+
+validation:
+  cpcv_splits: 5
+  cpcv_test_groups: 2
+  embargo_pct: 0.01
+  bootstrap_samples: 1000
+
+slo:
+  enable_validation: true
+  processing_time_per_bar_s: 0.001  # 1ms

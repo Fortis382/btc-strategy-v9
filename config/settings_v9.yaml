@@ -45,6 +45,9 @@ gates:
   use_session_gate: false   # 필요 시 true
   allow_sessions: ["asia","eu","us"]
 
+  use_ema_bias_gate: true  # ✅ 신규 (align_price_ema 대체)
+  align_price_ema: false   # ✅ 비활성화 (중복)
+  
 scoring:
   weights:
     trend: 0.25

@@ -1,4 +1,4 @@
-# tests/unit/test_ewq_numba.py (전체 교체)
+# tests/unit/test_ewq_numba.py
 
 import numpy as np
 from src.signals.ewq_numba import ewq_update_numba, ewq_batch_numba
@@ -13,19 +13,17 @@ def test_ewq_single():
 
 def test_ewq_batch_converge():
     """수렴 테스트: daily_cap 제약 고려"""
-    scores = np.array([75.0] * 10000, dtype=np.float64)  # ✅ 1000 → 10000 (100일)
+    scores = np.array([75.0] * 10000, dtype=np.float64)  # 100일
     phis = ewq_batch_numba(70.0, scores, 0.7, 0.05, 0.03, 96)
     
-    # ✅ 수정: 100일이면 70 → 73 정도 (3% * 100일 = 기댓값 73)
-    # 실제: alpha=0.05는 지수 감쇠 → 약 72.5
-    assert 72.0 < phis[-1] < 74.0, f"Expected ~73, got {phis[-1]}"
+    # 100일: 70 → ~73 (3% * 100 = 기댓값, alpha=0.05 감쇠 고려)
+    assert 72.0 < phis[-1] < 74.0, f"Expected ~73, got {phis[-1]:.2f}"
 
 def test_ewq_daily_cap():
     """일일 cap 테스트"""
     scores = np.array([90.0] * 96, dtype=np.float64)
     phis = ewq_batch_numba(70.0, scores, 0.7, 0.05, 0.03, 96)
     
-    # 70 → 70*1.03 = 72.1
     assert phis[-1] <= 72.1
 
 def test_ewq_speed():
