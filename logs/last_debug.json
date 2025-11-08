@@ -1,42 +1,42 @@
 {
-  "winrate": 0.4667,
-  "pf": 1.68,
-  "expR": 0.2267,
-  "mdd_R": 3.8,
+  "winrate": 0.44,
+  "pf": 1.467,
+  "expR": 0.168,
+  "mdd_R": 6.0,
   "avg_hold_bars": 3,
   "thr_used": {
-    "cand": 0.340877,
-    "enter": 0.386959
+    "cand": 0.237507,
+    "enter": 0.284618
   },
   "counts": {
-    "trades": 30
+    "trades": 25
   },
   "breakdown": {
     "stats": {
-      "score_q25": -0.5384382994256594,
-      "score_q50": 0.03599625477971329,
-      "score_q75": 0.5085897562722177,
-      "score_q90": 0.592134911409652,
+      "score_q25": -0.4668947448581524,
+      "score_q50": -0.02526945675599733,
+      "score_q75": 0.36723341014733446,
+      "score_q90": 0.46886623273277883,
       "ema21_slope_n_mean": 0.057596182145594206,
       "adx_n_mean": -0.3478373223814497,
       "rows": 8640,
-      "gate_ok_rows": 261,
-      "gate_ok_rate": 0.030208333333333334
+      "gate_ok_rows": 211,
+      "gate_ok_rate": 0.024421296296296295
     },
     "counts": {
       "total_rows": 8640,
-      "score_ge_cand": 3411,
-      "score_ge_enter": 3254,
-      "gate_ok": 261,
-      "cand_mask_true": 33
+      "score_ge_cand": 3349,
+      "score_ge_enter": 3133,
+      "gate_ok": 211,
+      "cand_mask_true": 25
     },
     "gate_used": "normal",
     "thr_mode": "auto_pct",
     "cand_pct": 0.76,
     "enter_pct": 0.88,
-    "thr_c_auto": 0.34087704694159593,
-    "thr_e_auto": 0.38695906554602555,
+    "thr_c_auto": 0.23750743958922965,
+    "thr_e_auto": 0.2846183523234278,
     "pool": "gate_ok",
-    "pool_size": 261
+    "pool_size": 211
   }
 }
