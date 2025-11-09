@@ -38,7 +38,17 @@ def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
     )
 
 def quantile(series: pl.Series, pct: float) -> float:
-    return float(series.quantile(pct))
+    """
+    Polars quantile with empty series fallback
+    
+    Returns:
+        분위수 값, 비어있으면 0.0 (게이트 통과 봉 없음 = 임계값 0)
+    """
+    if series.len() == 0:
+        return 0.0
+    
+    result = series.quantile(pct)
+    return float(result) if result is not None else 0.0
 
 def save_json(obj: Dict[str, Any], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)

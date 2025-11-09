@@ -1,13 +1,13 @@
 {
   "train_metrics": {
-    "wr": 0.3893,
+    "wr": 0.3992,
     "pf": 1.055
   },
   "test_metrics": {
-    "wr": 0.3899,
-    "pf": 1.049
+    "wr": 0.3992,
+    "pf": 1.059
   },
-  "gap_wr": 0.0016,
+  "gap_wr": 0.0001,
   "overfitting_risk": 0,
   "n_folds": 10
 }

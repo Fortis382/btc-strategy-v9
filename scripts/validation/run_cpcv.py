@@ -40,7 +40,11 @@ def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
     )
 
 def quantile(series: pl.Series, pct: float) -> float:
-    return float(series.quantile(pct))
+    if series.len() == 0:
+        return 0.0
+    
+    result = series.quantile(pct)
+    return float(result) if result is not None else 0.0
 
 def compute_thresholds(scores: pl.Series, cfg: Dict[str, Any]):
     dbg = cfg.get("debug", {})

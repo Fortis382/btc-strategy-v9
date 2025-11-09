@@ -20,11 +20,11 @@ indicators:
 gates:
   require_mtf: false
   use_adx_gate: true
-  adx_min: 20            # 20→22로 상향 (촙 컷)
+  adx_min: 10            # 20→22로 상향 (촙 컷)
   use_trend_gate: true
-  ema_slope_min: 0.03      # 0.06
+  ema_slope_min: 0.02      # 0.06
   ema_slope_min_chop: 0.06 # 0.10
-  use_range_gate: true
+  use_range_gate: false
   min_range_atr: 0.50    # 0.60
   range_on_bars: 3
   cooloff_bars: 1
@@ -99,7 +99,7 @@ debug:
   auto_thresholds:
     cand_pct: 0.76            # cand = 상위 22%
     enter_pct: 0.88           # enter = 상위 12%
-  no_gate: false
+  no_gate: true
   force_cand_from_score: false  # ★ 게이트 우회 금지
   force_pct: 0.75
   log_breakdown: true
