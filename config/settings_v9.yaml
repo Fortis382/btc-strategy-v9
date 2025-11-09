@@ -59,6 +59,17 @@ scoring:
   bias_trend_cand: 0.02
   bias_trend_enter: 0.04 
 
+# ===== EWQ (Exponentially Weighted Quantile) =====
+ewq:
+  initial_threshold: 70.0     # 초기 임계값 (스케일: [-100, 100])
+  theta: 0.7                  # 목표 분위 (0.7 = 상위 30%)
+  alpha: 0.05                 # 학습률
+  daily_cap: 0.03            # 일일 최대 변동 (3%)
+  tf_per_day: 96             # 하루 봉 수 (15m)
+
+# ===== 임계값 모드 =====
+use_ewq: false  # true면 EWQ 동적 임계값, false면 분위 기반
+
 thresholds:
   cand_score_min: 0.02
   enter_score_min: 0.08
@@ -75,6 +86,10 @@ risk:
   atr_sl: 1.0
   trail_k: 0.5
   max_hold_min: 75           # 12h → 3h로 완화(초기 MDD 방지)
+
+  # ===== MDD Breaker (v9.4 신규) =====
+  enable_mdd_breaker: false   # 운영 시 true 권장
+  mdd_breaker: 0.05          # 5% MDD에서 모든 거래 중단
 
 output:
   trades_csv: "logs/trades.csv"
