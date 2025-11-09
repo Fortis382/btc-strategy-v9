@@ -20,12 +20,12 @@ gates:
   
   # === ADX Gate (트렌드 강도) ===
   use_adx_gate: true
-  adx_min: 15               # ✅ 18 → 15 (더 많은 거래 허용)
+  adx_min: 8               # ✅ 18 → 15 (더 많은 거래 허용)
   
   # === Trend Gate (EMA Slope) ===
   use_trend_gate: true
-  ema_slope_min: 0.03       # ✅ 0.04 → 0.03 (완화)
-  ema_slope_min_chop: 0.06  # ✅ 0.08 → 0.06 (횡보 시 완화)
+  ema_slope_min: 0.01       # ✅ 0.04 → 0.03 (완화)
+  ema_slope_min_chop: 0.02  # ✅ 0.08 → 0.06 (횡보 시 완화)
   
   # === Range Gate (비활성) ===
   use_range_gate: false
@@ -39,7 +39,7 @@ gates:
   align_price_ema: false    # ✅ 비활성 (EMA Bias Gate로 대체)
   
   # === Dev Guard (과열 방지) ===
-  use_dev_guard: true
+  use_dev_guard: false
   max_dev_atr: 1.0          # ✅ 0.80 → 1.0 (완화)
   
   # === 고급 게이트 (비활성) ===
@@ -55,7 +55,7 @@ gates:
   allow_sessions: ["asia", "eu", "us"]
   
   # === EMA Bias Gate (신규 정량적) ===
-  use_ema_bias_gate: true   # ✅ 활성화
+  use_ema_bias_gate: false   # ✅ 활성화
   # (close - ema21) / ema21 >= ema_bias_norm (0.008 = 0.8%)
 
 scoring:
