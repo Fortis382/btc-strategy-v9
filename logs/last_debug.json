@@ -1,45 +1,45 @@
 {
-  "winrate": 0.0,
-  "pf": 0.0,
-  "expR": 0.0,
-  "mdd_R": 0.0,
-  "avg_hold_bars": 0,
+  "winrate": 0.5,
+  "pf": 1.333,
+  "expR": 0.15,
+  "mdd_R": 0.9,
+  "avg_hold_bars": 1,
   "thr_used": {
-    "cand": 0.674328,
-    "enter": 0.714328
+    "cand": 0.350033,
+    "enter": 0.380033
   },
   "counts": {
-    "trades": 0
+    "trades": 2
   },
   "breakdown": {
     "stats": {
-      "score_q25": -0.30434321078722615,
-      "score_q50": 0.05660865046799342,
-      "score_q75": 0.3600714912979558,
-      "score_q90": 0.5371681280438181,
-      "ema21_slope_n_mean": 0.053998184780943564,
+      "score_q25": -0.3680305139432464,
+      "score_q50": 0.08233522892020381,
+      "score_q75": 0.42517678366541156,
+      "score_q90": 0.571181038722913,
+      "ema21_slope_n_mean": 0.05574906087203385,
       "adx_n_mean": 0.26519291542938606,
       "rows": 8640,
-      "gate_ok_rows": 1451,
-      "gate_ok_rate": 0.16793981481481482
+      "gate_ok_rows": 27,
+      "gate_ok_rate": 0.003125
     },
     "counts": {
       "total_rows": 8640,
-      "score_ge_cand": 249,
-      "score_ge_enter": 133,
-      "gate_ok": 1451,
-      "cand_mask_true": 0
+      "score_ge_cand": 2857,
+      "score_ge_enter": 2586,
+      "gate_ok": 27,
+      "cand_mask_true": 13
     },
     "gate_used": "normal",
     "thr_mode": "ewq",
-    "q_init": 70.0,
-    "theta": 0.7,
-    "alpha": 0.05,
-    "daily_cap": 0.03,
-    "phi_last": 67.43281249994396,
-    "thr_c_ewq": 0.6743281249994396,
-    "thr_e_ewq": 0.7143281249994397,
-    "pool": "ewq",
-    "pool_size": 8640
+    "q_init": 35.0,
+    "theta": 0.65,
+    "alpha": 0.06,
+    "daily_cap": 0.04,
+    "phi_last": 35.00333333333333,
+    "thr_c_ewq": 0.3500333333333333,
+    "thr_e_ewq": 0.38003333333333333,
+    "pool": "gate_ok",
+    "pool_size": 27
   }
 }

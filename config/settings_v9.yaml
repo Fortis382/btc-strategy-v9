@@ -1,113 +1,136 @@
-# config/settings_v9.yaml
+# config/settings_v9.yaml - v9.4 Performance Optimized (Ultimate)
 data:
-  # 우선 순위: partitioned 디렉터리 → 단일 파일
   path_primary: "data/partitioned"
   path_fallback: "data/processed/BTCUSDT_15m.parquet"
   symbol: "BTCUSDT"
   tf: "15m"
-  start: null   # 예: "2025-09-01"
-  end:   null   # 예: "2025-11-07"
+  start: null
+  end: null
 
 indicators:
   ema: [21, 55]
   rsi: 14
   atr: 14
   adx: 14
-  # slope 정규화 상수(봉당 % 단위). 값↑ = 보수적
-  ema_slope_norm: 0.05
-  ema_bias_norm: -0.05
+  ema_slope_norm: 0.04      # ✅ 0.05 → 0.04 (더 민감)
+  ema_bias_norm: 0.008      # ✅ 신규 (EMA Bias Gate용)
 
 gates:
   require_mtf: false
-  use_adx_gate: true
-  adx_min: 18            # 20→22로 상향 (촙 컷)
-  use_trend_gate: true
-  ema_slope_min: 0.04      # 0.06
-  ema_slope_min_chop: 0.08 # 0.10
-  use_range_gate: false
-  min_range_atr: 0.60    # 0.60
-  range_on_bars: 3
-  cooloff_bars: 1
-  align_price_ema: false
-  use_dev_guard: true
-  max_dev_atr: 0.80    # 0.60
   
-  # 신규 게이트
+  # === ADX Gate (트렌드 강도) ===
+  use_adx_gate: true
+  adx_min: 15               # ✅ 18 → 15 (더 많은 거래 허용)
+  
+  # === Trend Gate (EMA Slope) ===
+  use_trend_gate: true
+  ema_slope_min: 0.03       # ✅ 0.04 → 0.03 (완화)
+  ema_slope_min_chop: 0.06  # ✅ 0.08 → 0.06 (횡보 시 완화)
+  
+  # === Range Gate (비활성) ===
+  use_range_gate: false
+  min_range_atr: 0.50       # ✅ 0.60 → 0.50 (사용 시 완화)
+  range_on_bars: 3
+  
+  # === Cooloff ===
+  cooloff_bars: 1           # ✅ 유지 (연속 진입 방지)
+  
+  # === Price-EMA Alignment ===
+  align_price_ema: false    # ✅ 비활성 (EMA Bias Gate로 대체)
+  
+  # === Dev Guard (과열 방지) ===
+  use_dev_guard: true
+  max_dev_atr: 1.0          # ✅ 0.80 → 1.0 (완화)
+  
+  # === 고급 게이트 (비활성) ===
   use_adx_slope_gate: false
   adx_slope_k: 3
-  min_adx_slope: 0.5     # 최근 3봉 누적 +0.5 이상
-
+  min_adx_slope: 0.5
+  
   use_wick_gate: false
   max_wick_ratio: 5.0
-
-  use_rsi_align_gate: false
-
-  use_session_gate: false   # 필요 시 true
-  allow_sessions: ["asia","eu","us"]
-
-  use_ema_bias_gate: false  # ✅ 신규 (align_price_ema 대체)
   
+  use_rsi_align_gate: false
+  use_session_gate: false
+  allow_sessions: ["asia", "eu", "us"]
+  
+  # === EMA Bias Gate (신규 정량적) ===
+  use_ema_bias_gate: true   # ✅ 활성화
+  # (close - ema21) / ema21 >= ema_bias_norm (0.008 = 0.8%)
+
 scoring:
   weights:
-    trend: 0.25
-    momentum: 0.25
-    volatility: 0.15
-    participation: 0.20  # ✅ 신규
-    location: 0.15       # ✅ 신규
-  vol_mode: "q90"   # "q90" | "iqr" (iqr로 바꾸면 과열 판정 더 보수적)
-  bias_trend_cand: 0.02
-  bias_trend_enter: 0.04 
+    trend: 0.30             # ✅ 0.25 → 0.30 (트렌드 중시)
+    momentum: 0.25          # ✅ 유지
+    volatility: 0.15        # ✅ 유지
+    participation: 0.15     # ✅ 0.20 → 0.15 (거래량 가중 축소)
+    location: 0.15          # ✅ 유지
+  
+  vol_mode: "q90"           # ✅ 유지 (IQR은 과도하게 보수적)
+  bias_trend_cand: 0.01     # ✅ 0.02 → 0.01 (cand 더 쉽게)
+  bias_trend_enter: 0.03    # ✅ 0.04 → 0.03 (enter 더 쉽게)
 
-# ===== EWQ (Exponentially Weighted Quantile) =====
+# ===== EWQ (핵심 성능 파라미터) =====
+use_ewq: true
+
 ewq:
-  initial_threshold: 70.0     # 초기 임계값 (스케일: [-100, 100])
-  theta: 0.7                  # 목표 분위 (0.7 = 상위 30%)
-  alpha: 0.05                 # 학습률
-  daily_cap: 0.03            # 일일 최대 변동 (3%)
-  tf_per_day: 96             # 하루 봉 수 (15m)
-
-# ===== 임계값 모드 =====
-use_ewq: true  # true면 EWQ 동적 임계값, false면 분위 기반
+  # 더미 데이터 최적 (현재)
+  initial_threshold: 35.0   # ✅ 40 → 35 (더 낮춤, 더 많은 거래)
+  
+  # 실거래 전환 시 (바이낸스 데이터)
+  # initial_threshold: 60.0  # 70보다 약간 완화
+  
+  theta: 0.65               # ✅ 0.7 → 0.65 (상위 35% → 더 넓음)
+  alpha: 0.06               # ✅ 0.05 → 0.06 (빠른 적응)
+  daily_cap: 0.04           # ✅ 0.03 → 0.04 (변동폭 확대)
+  tf_per_day: 96
 
 thresholds:
-  cand_score_min: 0.02
-  enter_score_min: 0.08
+  cand_score_min: 0.01      # ✅ 0.02 → 0.01 (완화)
+  enter_score_min: 0.05     # ✅ 0.08 → 0.05 (완화)
 
 risk:
-  R: 0.005
+  R: 0.005                  # ✅ 유지 (0.5% 리스크)
   max_leverage: 7
   lev_map:
-    - { min: 0.60, max: 0.65, lev: 2 }
-    - { min: 0.65, max: 0.75, lev: 4 }
-    - { min: 0.75, max: 0.80, lev: 6 }
-    - { min: 0.80, max: 1.00, lev: 7 }
-  atr_tp: [1.5, 1.8, 2.2]
-  atr_sl: 1.0
-  trail_k: 0.5
-  max_hold_min: 120           # 12h → 3h로 완화(초기 MDD 방지)
-
-  # ===== MDD Breaker (v9.4 신규) =====
-  enable_mdd_breaker: true   # 운영 시 true 권장
-  mdd_breaker: 0.05          # 5% MDD에서 모든 거래 중단
+    - { min: 0.60, max: 0.65, lev: 3 }  # ✅ 2 → 3 (공격적)
+    - { min: 0.65, max: 0.75, lev: 5 }  # ✅ 4 → 5
+    - { min: 0.75, max: 0.80, lev: 6 }  # ✅ 유지
+    - { min: 0.80, max: 1.00, lev: 7 }  # ✅ 유지
+  
+  # TP/SL 레벨 (공격적)
+  atr_tp: [1.2, 1.5, 2.0]   # ✅ [1.5, 1.8, 2.2] → 더 빠른 익절
+  atr_sl: 0.9               # ✅ 1.0 → 0.9 (손절 타이트)
+  trail_k: 0.6              # ✅ 0.5 → 0.6 (추적 손절 강화)
+  max_hold_min: 90          # ✅ 120 → 90 (1.5시간, 빠른 회전)
+  
+  # MDD Breaker
+  enable_mdd_breaker: true
+  mdd_breaker: 0.08         # ✅ 0.05 → 0.08 (8%까지 허용)
 
 output:
   trades_csv: "logs/trades.csv"
-  dbg_json:   "logs/last_debug.json"
+  dbg_json: "logs/last_debug.json"
 
 debug:
   auto_thresholds:
-    cand_pct: 0.85            # cand = 상위 22%
-    enter_pct: 0.92           # enter = 상위 12%
+    cand_pct: 0.80          # ✅ 0.85 → 0.80 (더 쉽게)
+    enter_pct: 0.88         # ✅ 0.92 → 0.88 (더 쉽게)
   no_gate: false
-  force_cand_from_score: false  # ★ 게이트 우회 금지
+  force_cand_from_score: false
   force_pct: 0.75
-  log_breakdown: true
+  log_breakdown: true       # ✅ 유지 (디버깅용)
 
 session:
   tz_offset_hours: 0
 
 validation:
-  cpcv_splits: 5          # 전체 분할 수
-  cpcv_test_groups: 2     # 각 fold의 test 그룹 수 (C(5,2)=10 folds)
-  embargo_pct: 0.01       # Embargo 1%
-  bootstrap_samples: 1000 # Bootstrap 샘플 수 (별도)
+  cpcv_splits: 5
+  cpcv_test_groups: 2
+  embargo_pct: 0.01
+  bootstrap_samples: 1000
+
+# ===== SLO (성능 검증) =====
+slo:
+  enable_validation: true   # ✅ 신규 활성화
+  processing_time_per_bar_s: 0.001  # 1ms 목표

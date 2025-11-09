@@ -62,15 +62,11 @@ def save_csv(df: pl.DataFrame, path: Path) -> None:
 
 def compute_thresholds_ewq(
     df: pl.DataFrame,
-    cfg: Dict[str, Any]
+    cfg: Dict[str, Any],
+    use_gate: bool = True  # ✅ 추가
 ) -> Tuple[float, float, Dict[str, Any]]:
     """
-    EWQ 기반 동적 임계값 계산
-    
-    Returns:
-        thr_c: cand 임계 (마지막 phi 값)
-        thr_e: enter 임계 (phi + bias)
-        info: 디버깅 정보
+    EWQ 기반 동적 임계값 계산 (gate_ok 필터링 추가)
     """
     from src.signals.ewq_numba import ewq_batch_numba
     import numpy as np
@@ -83,16 +79,21 @@ def compute_thresholds_ewq(
     daily_cap = float(ewq_cfg.get("daily_cap", 0.03))
     tf_per_day = int(ewq_cfg.get("tf_per_day", 96))
     
-    # 스코어를 [-100, 100] 범위로 스케일링 (EWQ가 이해하기 쉬운 범위)
-    scores_norm = df["score"].to_numpy() * 100.0  # [-1,1] → [-100,100]
+    # ✅ 수정: gate_ok 필터링된 스코어 사용
+    if use_gate:
+        scores_series = df.filter(pl.col("gate_ok"))["score"]
+        pool_tag = "gate_ok"
+    else:
+        scores_series = df["score"]
+        pool_tag = "all"
+    
+    # 스케일링
+    scores_norm = scores_series.to_numpy() * 100.0
     
     # EWQ 계산
     phis = ewq_batch_numba(q_init, scores_norm, theta, alpha, daily_cap, tf_per_day)
     
-    # 마지막 phi를 임계값으로 사용
-    thr_c = float(phis[-1] / 100.0)  # [-100,100] → [-1,1]
-    
-    # Enter는 bias 추가
+    thr_c = float(phis[-1] / 100.0)
     bias = float(cfg["scoring"].get("bias_trend_enter", 0.04))
     thr_e = thr_c + bias
     
@@ -105,8 +106,9 @@ def compute_thresholds_ewq(
         "phi_last": phis[-1],
         "thr_c_ewq": thr_c,
         "thr_e_ewq": thr_e,
+        "pool": pool_tag,  # ✅ 추가
+        "pool_size": len(scores_norm),  # ✅ 추가
     }
-
 # 58번째 줄 이후에 추가
 
 def compute_thresholds(scores: pl.Series, cfg: Dict[str, Any]) -> Tuple[float, float, Dict[str, Any]]:
@@ -141,19 +143,46 @@ def compute_thresholds(scores: pl.Series, cfg: Dict[str, Any]) -> Tuple[float, f
         "thr_e_auto": thr_e,
     }
     
+# scripts/backtest/run_backtest.py 66번째 줄 교체
+
 def cooloff_mask(mask: pl.Series, bars: int) -> pl.Series:
+    """
+    Cooloff 마스크 생성 (버그 수정 v3)
+    
+    논리: 신호 발생 시, 다음 bars개 봉에서 신호 차단
+    
+    Args:
+        mask: 원본 시그널 (bool Series)
+        bars: 쿨다운 봉 수
+    
+    Returns:
+        쿨다운 적용된 마스크
+    
+    예시:
+        input:  [F, T, T, F, T, F, F, F]  (bars=2)
+        output: [F, T, F, F, T, F, F, F]
+                     ↑     ↑
+                   신호   2봉 쿨다운 후 재개
+    """
     if bars <= 0:
         return mask
+    
     arr = mask.to_list()
     n = len(arr)
+    result = [False] * n  # ✅ 수정: 별도 결과 배열
     block = 0
+    
     for i in range(n):
         if block > 0:
-            arr[i] = False
+            result[i] = False
             block -= 1
-        if arr[i]:
+        elif arr[i]:  # ✅ 원본 arr 참조
+            result[i] = True
             block = bars
-    return pl.Series(arr, dtype=pl.Boolean)
+        else:
+            result[i] = False
+    
+    return pl.Series(result, dtype=pl.Boolean)
 
 def simple_backtest(df: pl.DataFrame, cfg: Dict[str, Any]):
     risk = cfg["risk"]
@@ -295,9 +324,9 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     use_gate = not bool(dbg.get("no_gate", False))  # ✅ 항상 정의
     
     if use_ewq:
-        thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg)
-        pool_tag = "ewq"
-        pool_size = int(df.height)
+        thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg, use_gate=use_gate)  # ✅
+        pool_tag = thr_info.get("pool", "ewq")  # ✅
+        pool_size = thr_info.get("pool_size", int(df.height))  # ✅
     else:
         if use_gate:
             score_pool = df.filter(pl.col("gate_ok"))["score"]
@@ -331,12 +360,62 @@ def run(cfg_path: Path, quiet: bool = False) -> None:
     cand_mask = (df["score_cand"] >= thr_c)
     enter_mask = (df["score_enter"] >= thr_e)
 
-    if int(g.get("cooloff_bars", 0)) > 0:
-        cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
+    print("\n[DEBUG] Column check:")
+    print(f"  'score' in df.columns: {'score' in df.columns}")
+    print(f"  'score_cand' in df.columns: {'score_cand' in df.columns}")
+    print(f"  df.columns: {df.columns}")
+    print(f"  thr_c: {thr_c:.6f}, thr_e: {thr_e:.6f}")
 
+    print(f"\n[DEBUG] Score stats:")
+    print(f"  score min/max: {df['score'].min():.3f} / {df['score'].max():.3f}")
+    print(f"  score_cand == score: {(df['score_cand'] == df['score']).all()}")
+
+    print(f"\n[DEBUG] Mask BEFORE cooloff:")
+    print(f"  cand_mask sum: {int(cand_mask.sum())} / {len(cand_mask)}")
+    print(f"  enter_mask sum: {int(enter_mask.sum())} / {len(enter_mask)}")
+    
+    # 152번째 줄: 기존 cooloff 코드 (그대로 유지)
+    if int(g.get("cooloff_bars", 0)) > 0:
+        print(f"\n[DEBUG] Applying cooloff (bars={g['cooloff_bars']})")
+        cand_before = int(cand_mask.sum())
+        cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
+        print(f"  cand_mask AFTER cooloff: {int(cand_mask.sum())} (before={cand_before})")
+
+    print(f"\n[DEBUG] BEFORE gate AND:")
+    print(f"  base_gate sum: {int(base_gate.sum())} / {len(base_gate)}")
+    print(f"  cand_mask sum: {int(cand_mask.sum())}")
+
+    # ===== 교집합 분석 추가 =====
+    print(f"\n[DEBUG] Intersection analysis:")
+    overlap = cand_mask & base_gate
+    print(f"  (cand_mask & gate_ok) overlap: {int(overlap.sum())} / {int(cand_mask.sum())}")
+
+    # 스코어 높은 봉들의 게이트 상태 확인
+    cand_indices = [i for i, v in enumerate(cand_mask.to_list()) if v]
+    if len(cand_indices) > 0:
+        sample_idx = cand_indices[:5]  # 처음 5개만
+        print(f"\n[DEBUG] Sample high-score bars (first 5):")
+        for idx in sample_idx:
+            print(f"    idx={idx}: score={df['score'][idx]:.3f}, gate_ok={df['gate_ok'][idx]}, "
+                  f"adx_n={df['adx_n'][idx]:.3f}, ema21_slope_n={df['ema21_slope_n'][idx]:.3f}")
+
+    # 게이트 통과 봉들의 스코어 분포
+    gate_scores = df.filter(pl.col("gate_ok"))["score"]
+    print(f"\n[DEBUG] Gate-passed scores distribution:")
+    print(f"  gate_ok rows: {int(df['gate_ok'].sum())}")
+    print(f"  gate_scores q25/q50/q75/q90: {gate_scores.quantile(0.25):.3f} / "
+          f"{gate_scores.quantile(0.50):.3f} / {gate_scores.quantile(0.75):.3f} / "
+          f"{gate_scores.quantile(0.90):.3f}")
+    print(f"  thr_c (needed): {thr_c:.3f}")
+    
     cand_mask = cand_mask & base_gate
     enter_mask = enter_mask & base_gate
 
+    print(f"\n[DEBUG] AFTER gate AND:")
+    print(f"  cand_mask FINAL: {int(cand_mask.sum())}")
+    print(f"  enter_mask FINAL: {int(enter_mask.sum())}")
+
+    # 158번째 줄: 기존 코드 (그대로)
     df = df.with_columns([
         pl.Series("cand_mask", cand_mask),
         pl.Series("enter_mask", enter_mask),
