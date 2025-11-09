@@ -1,15 +1,15 @@
 {
-  "winrate": 0.3965,
-  "pf": 1.041,
-  "expR": 0.0185,
-  "mdd_R": 25.4,
-  "avg_hold_bars": 2,
+  "winrate": 0.0,
+  "pf": 0.0,
+  "expR": 0.0,
+  "mdd_R": 0.0,
+  "avg_hold_bars": 0,
   "thr_used": {
-    "cand": 0.367019,
-    "enter": 0.508544
+    "cand": 0.674328,
+    "enter": 0.714328
   },
   "counts": {
-    "trades": 691
+    "trades": 0
   },
   "breakdown": {
     "stats": {
@@ -20,23 +20,26 @@
       "ema21_slope_n_mean": 0.053998184780943564,
       "adx_n_mean": 0.26519291542938606,
       "rows": 8640,
-      "gate_ok_rows": 0,
-      "gate_ok_rate": 0.0
+      "gate_ok_rows": 1451,
+      "gate_ok_rate": 0.16793981481481482
     },
     "counts": {
       "total_rows": 8640,
-      "score_ge_cand": 2074,
-      "score_ge_enter": 1038,
-      "gate_ok": 0,
-      "cand_mask_true": 1362
+      "score_ge_cand": 249,
+      "score_ge_enter": 133,
+      "gate_ok": 1451,
+      "cand_mask_true": 0
     },
     "gate_used": "normal",
-    "thr_mode": "auto_pct",
-    "cand_pct": 0.76,
-    "enter_pct": 0.88,
-    "thr_c_auto": 0.36701909805339233,
-    "thr_e_auto": 0.508544286079747,
-    "pool": "all",
+    "thr_mode": "ewq",
+    "q_init": 70.0,
+    "theta": 0.7,
+    "alpha": 0.05,
+    "daily_cap": 0.03,
+    "phi_last": 67.43281249994396,
+    "thr_c_ewq": 0.6743281249994396,
+    "thr_e_ewq": 0.7143281249994397,
+    "pool": "ewq",
     "pool_size": 8640
   }
 }
