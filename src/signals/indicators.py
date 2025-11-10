@@ -16,6 +16,11 @@ def add_indicators(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
     - 5-factor: trend/momentum/volatility/participation/location
     - 기본: ema{fast}, ema{slow}, rsi{rlen}, atr{alen}_abs, adx{dlen}
     """
+    required = {"ts", "open", "high", "low", "close", "volume"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing columns: {missing}")
+    
     ema_fast, ema_slow = cfg["indicators"]["ema"]
     rlen = int(cfg["indicators"]["rsi"])
     alen = int(cfg["indicators"]["atr"])
