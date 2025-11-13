@@ -3598,5 +3598,50 @@
     "trades": 8080,
     "elapsed_sec": 0.047,
     "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.2,
+    "fixed_threshold": 0.04,
+    "risk.atr_sl": 0.8,
+    "winrate": 0.499437148217636,
+    "pf": 1.0062794520543354,
+    "expR": 0.25707394890710933,
+    "mdd_R": 13214.011855482026,
+    "sharpe": 0.44870294044972164,
+    "trades": 7995,
+    "elapsed_sec": 0.048,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.2,
+    "fixed_threshold": 0.04,
+    "risk.atr_sl": 1.0,
+    "winrate": 0.499437148217636,
+    "pf": 1.0039387741908559,
+    "expR": 0.1527719141230156,
+    "mdd_R": 13710.826478973197,
+    "sharpe": 0.27751598466786687,
+    "trades": 7995,
+    "elapsed_sec": 0.064,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.2,
+    "fixed_threshold": 0.04,
+    "risk.atr_sl": 1.2,
+    "winrate": 0.499437148217636,
+    "pf": 1.0027519537507872,
+    "expR": 0.1010090432201345,
+    "mdd_R": 13890.669941797838,
+    "sharpe": 0.19111722918931137,
+    "trades": 7995,
+    "elapsed_sec": 0.06,
+    "error": null
   }
 ]
