@@ -1,13 +1,13 @@
 {
-  "winrate": 0.3966,
-  "pf": 1.113,
-  "expR": 0.0603,
-  "mdd_R": 5.5,
-  "avg_hold_bars": 2,
+  "winrate": 0.5,
+  "pf": 1.333,
+  "expR": 0.15,
+  "mdd_R": 0.9,
+  "avg_hold_bars": 1,
   "sharpe": 0.0,
   "cand_ratio": 0.0,
   "avg_gap_bars": 0.0,
-  "elapsed_sec": 0.044,
+  "elapsed_sec": 0.858,
   "thr_used": {
     "cand": 0.603621,
     "enter": 0.633621
@@ -18,7 +18,7 @@
     "score_ge_enter": 1204,
     "gate_ok": 2068,
     "cand_mask_true": 863,
-    "trades": 58
+    "trades": 2
   },
   "breakdown": {
     "stats": {
