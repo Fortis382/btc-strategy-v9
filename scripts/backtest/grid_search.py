@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 import itertools as it, argparse, time, json, yaml
 
-from run_backtest import backtest_once
+from run_backtest import run, load_cfg
 
 
 def _load_params(p: Path) -> Dict[str, List[Any]]:
@@ -67,7 +67,6 @@ def _product(grid: Dict[str, List[Any]]):
     for vals in it.product(*[grid[k] for k in keys]):
         yield dict(zip(keys, vals))
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type=Path, required=True)
@@ -99,7 +98,7 @@ def main():
         print(f"[{i}/{total}] {flat_ov}")
         
         try:
-            m = backtest_once(args.config, nested_ov)
+            m = run(args.config, nested_ov)
             rows.append({**flat_ov, **m, "error": None})
         except Exception as e:
             rows.append({**flat_ov, "error": str(e)})

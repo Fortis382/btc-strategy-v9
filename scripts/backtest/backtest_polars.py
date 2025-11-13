@@ -1,10 +1,10 @@
 # scripts/backtest/backtest_polars.py
 """
-v9.4 Backtest Engine — 최종 강화판
-- EWM variance 수정 (Welford's algorithm)
-- Cache fingerprint에 data hash 추가
-- adaptive_ewm_z 워밍업 처리 수정
-- indicators 재계산 방지 옵션
+v9.4 Backtest Engine - Final Hardened Version
+- EWM variance correction (Welford's algorithm)
+- Cache fingerprint with data hash
+- adaptive_ewm_z warmup handling fix
+- indicators recalculation prevention option
 """
 from __future__ import annotations
 from pathlib import Path
@@ -22,7 +22,7 @@ from src.signals.factors import compute_factors_polars, score_weighted_sum
 
 # ========== IO ==========
 def _read_parquet_any(path: Path, cfg: Dict[str, Any]) -> pl.DataFrame:
-    """파일/폴더/glob + DuckDB 옵션"""
+    """File/folder/glob + DuckDB option"""
     s = str(path)
     pattern = s if any(c in s for c in "*?[") else (s if path.is_file() else f"{path}/*.parquet")
     
@@ -38,7 +38,7 @@ def _read_parquet_any(path: Path, cfg: Dict[str, Any]) -> pl.DataFrame:
     return pl.scan_parquet(pattern).collect(streaming=True)
 
 
-# ========== 유틸 ==========
+# ========== Utils ==========
 def _require_cols(df: pl.DataFrame, cols: List[str]) -> None:
     miss = [c for c in cols if c not in df.columns]
     if miss:
@@ -54,7 +54,7 @@ def _weights_from_cfg(cfg: Dict[str, Any]) -> Dict[str, float]:
 
 
 def _phi_to_z(phi: float) -> float:
-    """표준정규 z 근사 (선형 보간)"""
+    """Standard normal z approximation (linear interpolation)"""
     table = [
         (0.70, 0.5244), (0.72, 0.5832), (0.75, 0.6745), (0.78, 0.7722),
         (0.80, 0.8416), (0.85, 1.0364), (0.90, 1.2816), (0.95, 1.6449)
@@ -75,8 +75,8 @@ def _ewm_mean_std_correct(x: np.ndarray, alpha: float, eps: float = 1e-12) -> Tu
     """
     EWM mean/std (Welford's algorithm)
     
-    올바른 분산 공식:
-    V_t = (1-α) * V_{t-1} + α * (x_t - μ_{t-1})^2
+    Correct variance formula:
+    V_t = (1-a) * V_{t-1} + a * (x_t - mu_{t-1})^2
     """
     m = np.empty_like(x)
     v = np.empty_like(x)
@@ -106,17 +106,17 @@ def _ewm_mean_std_correct(x: np.ndarray, alpha: float, eps: float = 1e-12) -> Tu
     return m, std
 
 
-def _fingerprint_safe(df: pl.DataFrame, cfg: Dict, factor_cols: List[str]) -> str:
-    """안전한 캐시 키 (data hash + config)"""
-    # 데이터 시그니처
+def _fingerprint_safe(df: pl.DataFrame, cfg: Dict, factor_cols: List[str], ts_col: str = "ts") -> str:
+    """Safe cache key (data hash + config)"""
+    # Data signature
     data_sig = {
         "cols": df.columns,
         "rows": df.height,
-        "first_ts": int(df[0, 0]) if df.height > 0 else 0,
-        "last_ts": int(df[-1, 0]) if df.height > 0 else 0,
+        "first_ts": int(df[ts_col][0]) if df.height > 0 and ts_col in df.columns else 0,
+        "last_ts": int(df[ts_col][-1]) if df.height > 0 and ts_col in df.columns else 0,
     }
     
-    # 설정 시그니처
+    # Config signature
     cfg_sig = {
         "warmup": cfg.get("warmup_bars", 300),
         "weights": cfg.get("weights", {}),
@@ -127,9 +127,9 @@ def _fingerprint_safe(df: pl.DataFrame, cfg: Dict, factor_cols: List[str]) -> st
     return hashlib.sha256(combined.encode()).hexdigest()[:16]
 
 
-# ========== 엔진 ==========
+# ========== Engine ==========
 class BacktestEngine:
-    """Polars 벡터화 백테스트 (완전 강화판)"""
+    """Polars vectorized backtest (fully hardened)"""
     
     def __init__(self, cfg: Dict[str, Any]):
         self.cfg = cfg
@@ -161,10 +161,10 @@ class BacktestEngine:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
     
     def run(self, df: pl.DataFrame, skip_indicators: bool = False) -> Dict[str, Any]:
-        """전체 백테스트
+        """Full backtest
         
         Args:
-            skip_indicators: True면 add_indicators 스킵 (CPCV용)
+            skip_indicators: True to skip add_indicators (for CPCV)
         """
         df = df.sort(self.col_ts).with_row_count("_idx")
         
@@ -173,7 +173,7 @@ class BacktestEngine:
             df = add_indicators(df, self.cfg)
         _require_cols(df, [self.col_close, self.col_atr])
         
-        # 2. Factors (캐시)
+        # 2. Factors (cache)
         df = self._attach_factors(df)
         
         # 3. Score
@@ -202,9 +202,9 @@ class BacktestEngine:
         return {"df": df, "metrics": metrics, "trades": trades}
     
     def _attach_factors(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Factor 계산 (캐시 지원)"""
+        """Factor computation (cache support)"""
         factor_cols = ["trend", "momentum", "volatility", "participation", "location"]
-        fp = _fingerprint_safe(df, self.cfg, factor_cols)
+        fp = _fingerprint_safe(df, self.cfg, factor_cols, self.col_ts)
         cache_path = self.cache_dir / f"factors_{fp}.parquet"
         
         if self.cache_enabled and cache_path.exists():
@@ -225,7 +225,7 @@ class BacktestEngine:
         return df2
     
     def _add_score(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Score 계산"""
+        """Score computation"""
         s = score_weighted_sum(df, self.weights)
         if isinstance(s, pl.Expr):
             return df.with_columns(s.alias("score"))
@@ -238,13 +238,13 @@ class BacktestEngine:
         return df.with_columns(pl.sum_horizontal(parts).alias("score"))
     
     def _gate(self, df: pl.DataFrame) -> pl.DataFrame:
-        """Gate 적용 (워밍업 처리 수정)"""
+        """Gate application (warmup handling fix)"""
         if self.gate_mode == "fixed":
             long_ok = pl.col("score") > self.fixed_thr
             short_ok = pl.col("score") < -self.fixed_thr
         
         elif self.gate_mode == "adaptive_ewm_z":
-            # 워밍업 제외하고 EWM 계산
+            # Exclude warmup for EWM calculation
             valid_mask_np = (df["_idx"] >= self.warmup).to_numpy()
             score_all = df["score"].to_numpy()
             score_valid = score_all[valid_mask_np]
@@ -253,7 +253,7 @@ class BacktestEngine:
             z = (score_valid - mu) / np.maximum(sig, self.min_sigma)
             z_thr = _phi_to_z(self.phi)
             
-            # 전체 길이로 복원
+            # Restore to full length
             long_ok_full = np.zeros(df.height, dtype=bool)
             short_ok_full = np.zeros(df.height, dtype=bool)
             
@@ -271,7 +271,7 @@ class BacktestEngine:
         else:
             raise ValueError(f"Unknown gate.mode: {self.gate_mode}")
         
-        # side 처리
+        # side handling
         if self.side == "long":
             return df.with_columns([
                 long_ok.alias("entry"),
@@ -289,7 +289,7 @@ class BacktestEngine:
             ])
     
     def _simulate(self, df: pl.DataFrame) -> pl.DataFrame:
-        """거래 시뮬 (ATR-R)"""
+        """Trade simulation (ATR-R)"""
         c, a = self.col_close, self.col_atr
         df = df.with_columns([
             pl.col(c).shift(-self.hold).alias("exit_close"),
@@ -315,11 +315,11 @@ class BacktestEngine:
         ])
     
     def _metrics(self, df: pl.DataFrame) -> Dict[str, float]:
-        """메트릭 (올바른 Sharpe)"""
+        """Metrics (correct Sharpe)"""
         trades = df.filter(pl.col("R").is_not_null())
         n = int(trades.height)
         
-        # cand_ratio (워밍업 제외)
+        # cand_ratio (exclude warmup)
         live = df.filter(pl.col("_idx") >= self.warmup)
         total_bars = int(live.height)
         cand_count = int(live["entry"].sum()) if "entry" in live.columns else 0
@@ -346,7 +346,7 @@ class BacktestEngine:
         dd = cum - np.maximum.accumulate(cum)
         max_dd_R = abs(float(dd.min())) if dd.size else 0.0
         
-        # Sharpe (거래 간 평균 gap)
+        # Sharpe (inter-trade gap)
         avg_R = float(R.mean())
         std_R = float(R.std()) if R.size > 1 else 1e-9
         
@@ -377,7 +377,7 @@ class BacktestEngine:
 
 
 def run_backtest(data_path: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
-    """공개 API"""
+    """Public API"""
     df = _read_parquet_any(data_path, cfg)
     return BacktestEngine(cfg).run(df)
 
