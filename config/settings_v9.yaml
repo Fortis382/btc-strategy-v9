@@ -20,11 +20,11 @@ gates:
   
   # === ADX Gate (트렌드 강도) ===
   use_adx_gate: true
-  adx_min: 8               # ✅ 18 → 15 (더 많은 거래 허용)
+  adx_min: 18               # ✅ 18 → 15 (더 많은 거래 허용)
   
   # === Trend Gate (EMA Slope) ===
   use_trend_gate: true
-  ema_slope_min: 0.01       # ✅ 0.04 → 0.03 (완화)
+  ema_slope_min: 0.03       # ✅ 0.04 → 0.03 (완화)
   ema_slope_min_chop: 0.02  # ✅ 0.08 → 0.06 (횡보 시 완화)
   
   # === Range Gate (비활성) ===
@@ -55,7 +55,7 @@ gates:
   allow_sessions: ["asia", "eu", "us"]
   
   # === EMA Bias Gate (신규 정량적) ===
-  use_ema_bias_gate: false   # ✅ 활성화
+  use_ema_bias_gate: true   # ✅ 활성화
   # (close - ema21) / ema21 >= ema_bias_norm (0.008 = 0.8%)
 
 scoring:
@@ -75,12 +75,12 @@ use_ewq: true
 
 ewq:
   # 더미 데이터 최적 (현재)
-  initial_threshold: 35.0   # ✅ 40 → 35 (더 낮춤, 더 많은 거래)
+  initial_threshold: 60.0   # ✅ 40 → 35 (더 낮춤, 더 많은 거래)
   
   # 실거래 전환 시 (바이낸스 데이터)
   # initial_threshold: 60.0  # 70보다 약간 완화
   
-  theta: 0.65               # ✅ 0.7 → 0.65 (상위 35% → 더 넓음)
+  theta: 0.70               # ✅ 0.7 → 0.65 (상위 35% → 더 넓음)
   alpha: 0.06               # ✅ 0.05 → 0.06 (빠른 적응)
   daily_cap: 0.04           # ✅ 0.03 → 0.04 (변동폭 확대)
   tf_per_day: 96

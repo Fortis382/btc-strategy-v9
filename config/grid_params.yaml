@@ -5,7 +5,7 @@ weights.volatility: [0.10, 0.15]
 weights.participation: [0.0]  # ← 고정
 weights.location: [0.15, 0.20]
 
-fixed_threshold: [0.02, 0.03]
+risk.atr_tp: [[1.2, 1.5, 2.0], [1.5, 1.8, 2.2]]
 risk.atr_sl: [0.9, 1.0]
 
 # 총 32개 (2^5)

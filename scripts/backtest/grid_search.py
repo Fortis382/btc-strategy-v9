@@ -130,7 +130,7 @@ def main():
             
             try:
                 # Run backtest
-                result = run(temp_path, quiet=True, use_polars_engine=True)
+                result = run(temp_path, quiet=True, use_polars_engine=False)
                 
                 # Extract metrics (키 이름 주의: "pf" not "profit_factor")
                 row = {
