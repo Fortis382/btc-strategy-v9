@@ -7,43 +7,29 @@ import numpy as np
 import polars as pl
 from typing import Dict, Any, Optional
 
+# src/validation/metrics.py (라인 11 교체)
 def calculate_sharpe(
     returns: np.ndarray,
     risk_free_rate: float = 0.0,
-    periods_per_year: int = 35040  # 15분봉 기준
+    periods_per_year: int = 252  # ← 일별 기준으로 변경
 ) -> float:
     """
-    Sharpe Ratio
+    Sharpe Ratio (Daily basis)
     
-    Args:
-        returns: 수익률 배열 (R 단위 또는 %)
-        risk_free_rate: 무위험 수익률 (연율)
-        periods_per_year: 연간 기간 수
-    
-    Returns:
-        Sharpe Ratio
-    
-    Formula:
-        Sharpe = (mean(R) - Rf) / std(R) × sqrt(periods)
-    
-    예시:
-        returns = [0.5, -0.3, 0.8, 1.2]  # R 단위
-        sharpe = calculate_sharpe(returns)
-        # → 2.1 (좋음)
+    NOTE: 15분봉 거래를 일별로 aggregation 후 계산
+          backtest_polars.py에서 사전 처리 필요
     """
-    if len(returns) == 0:
+    if len(returns) < 2:
         return 0.0
     
     excess_returns = returns - (risk_free_rate / periods_per_year)
+    mean_r = np.mean(excess_returns)
+    std_r = np.std(excess_returns, ddof=1)
     
-    if np.std(excess_returns) < 1e-12:
+    if std_r < 1e-12:
         return 0.0
     
-    sharpe = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(periods_per_year)
-    
-    return float(sharpe)
-
-
+    return float(mean_r / std_r * np.sqrt(periods_per_year))
 def calculate_mdd(equity_curve: np.ndarray) -> float:
     """
     Maximum Drawdown (MDD)
@@ -70,7 +56,6 @@ def calculate_mdd(equity_curve: np.ndarray) -> float:
     drawdown = (peak - equity_curve) / (peak + 1e-12)
     
     return float(np.max(drawdown))
-
 
 def calculate_profit_factor(
     returns: np.ndarray

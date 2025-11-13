@@ -73,7 +73,7 @@ def score_weighted_sum(
                  w_pa * participation + w_lo * location) / sum(weights)
     """
     _EPS = 1e-12
-    
+    warmup = 300
     w_tr = float(weights.get("trend", 0.25))
     w_mo = float(weights.get("momentum", 0.25))
     w_vo = float(weights.get("volatility", 0.15))
@@ -82,7 +82,8 @@ def score_weighted_sum(
     w_sum = (w_tr + w_mo + w_vo + w_pa + w_lo) or 1.0
     
     # Volatility 스코어 (낮을수록 좋음)
-    vol_ref = float(df["atr_p"].quantile(0.90)) if df.height else 1.0
+    df_valid = df.slice(warmup, df.height - warmup) if df.height > warmup else df
+    vol_ref = float(df["atr_p"].quantile(0.90)) if df_valid.height else 1.0
     vol_sc = (1.0 - (pl.col("atr_p") / (vol_ref + _EPS))).clip(-1.0, 1.0)
     
     score = (
