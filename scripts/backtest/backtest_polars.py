@@ -108,12 +108,40 @@ def _ewm_mean_std_correct(x: np.ndarray, alpha: float, eps: float = 1e-12) -> Tu
 
 def _fingerprint_safe(df: pl.DataFrame, cfg: Dict, factor_cols: List[str], ts_col: str = "ts") -> str:
     """Safe cache key (data hash + config)"""
+    
+    def _ts_to_int(val) -> int:
+        """Convert any timestamp type to int (epoch ms)"""
+        if val is None:
+            return 0
+        if isinstance(val, (int, float)):
+            return int(val)
+        # Polars Datetime → Python datetime → epoch
+        if hasattr(val, 'timestamp'):
+            return int(val.timestamp() * 1000)
+        # 문자열 시도
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(str(val))
+            return int(dt.timestamp() * 1000)
+        except:
+            return 0
+    
     # Data signature
+    first_val = None
+    last_val = None
+    
+    if df.height > 0 and ts_col in df.columns:
+        try:
+            first_val = df[ts_col][0]
+            last_val = df[ts_col][-1]
+        except Exception:
+            pass
+    
     data_sig = {
         "cols": df.columns,
         "rows": df.height,
-        "first_ts": int(df[ts_col][0]) if df.height > 0 and ts_col in df.columns else 0,
-        "last_ts": int(df[ts_col][-1]) if df.height > 0 and ts_col in df.columns else 0,
+        "first_ts": _ts_to_int(first_val),
+        "last_ts": _ts_to_int(last_val),
     }
     
     # Config signature
@@ -125,7 +153,6 @@ def _fingerprint_safe(df: pl.DataFrame, cfg: Dict, factor_cols: List[str], ts_co
     
     combined = json.dumps({**data_sig, **cfg_sig}, sort_keys=True)
     return hashlib.sha256(combined.encode()).hexdigest()[:16]
-
 
 # ========== Engine ==========
 class BacktestEngine:

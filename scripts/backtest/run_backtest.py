@@ -1,9 +1,9 @@
 # scripts/backtest/run_backtest.py
 """
-v9.4 Backtest Entry Point — 최종 통합판
-- 기존: loader, cooloff, MDD breaker 유지
-- 신규: backtest_polars 엔진 통합 (EWM, Sharpe, cache, adaptive gate)
-- 호환: 기존 YAML 구조 유지 (data, gates, risk, output)
+v9.4 Backtest Entry Point - Final Corrected Version
+- 버그 1~6 전부 수정
+- Polars 엔진 / loop fallback 명확히 분리
+- enter_mask 생성/사용 일관성 확보
 """
 from __future__ import annotations
 
@@ -17,17 +17,17 @@ from typing import Dict, Any, Tuple, Optional
 import polars as pl
 import yaml
 
-# 프로젝트 루트 추가
+# 프로젝트 루트
 _THIS = Path(__file__).resolve()
 _ROOT = _THIS.parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# 기존 import (유지)
+# 기존 import
 from src.signals.indicators import add_indicators
 from src.core.scoring import score_and_gate
 
-# 신규 import (backtest_polars 엔진)
+# 신규 import (Polars 엔진)
 try:
     from scripts.backtest.backtest_polars import BacktestEngine, _read_parquet_any
     POLARS_ENGINE_AVAILABLE = True
@@ -36,13 +36,12 @@ except ImportError:
     print("[WARN] backtest_polars not available, falling back to simple loop")
 
 
-# ========== 유틸 (기존 유지) ==========
+# ========== Utils (unchanged) ==========
 def load_cfg(path: Path) -> Dict[str, Any]:
-    """YAML 설정 로드"""
+    """YAML config load"""
     with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     
-    # 필수 키 검증
     for key in ["data", "gates", "risk", "output"]:
         if key not in cfg:
             raise KeyError(f"Missing config key: {key}")
@@ -51,7 +50,7 @@ def load_cfg(path: Path) -> Dict[str, Any]:
 
 
 def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
-    """OHLCV 데이터 로드 (기존 loader 유지)"""
+    """OHLCV data load"""
     try:
         from src.core.loader_polars import load_ohlcv as _load
         return _load(
@@ -62,7 +61,6 @@ def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
             cfg["data"].get("end")
         )
     except (ImportError, KeyError):
-        # fallback: 직접 parquet 로드
         data_path = Path(cfg["data"].get("path_primary", "data/processed/BTCUSDT_15m_cleaned.parquet"))
         if not data_path.is_absolute():
             data_path = _ROOT / data_path
@@ -70,7 +68,7 @@ def load_ohlcv(cfg: Dict[str, Any]) -> pl.DataFrame:
 
 
 def quantile(series: pl.Series, pct: float) -> float:
-    """Polars quantile (빈 Series 방어)"""
+    """Polars quantile with empty series fallback"""
     if series.len() == 0:
         return 0.0
     result = series.quantile(pct)
@@ -78,33 +76,25 @@ def quantile(series: pl.Series, pct: float) -> float:
 
 
 def save_json(obj: Dict[str, Any], path: Path) -> None:
-    """JSON 저장"""
+    """JSON save"""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def save_csv(df: pl.DataFrame, path: Path) -> None:
-    """CSV 저장"""
+    """CSV save"""
     path.parent.mkdir(parents=True, exist_ok=True)
     df.write_csv(str(path))
 
 
-# ========== Cooloff (기존 로직 유지, 버그 수정) ==========
+# ========== Cooloff (fixed) ==========
 def cooloff_mask(mask: pl.Series, bars: int) -> pl.Series:
     """
-    Cooloff 마스크 (신호 후 N바 차단)
+    Cooloff mask (signal blocking for N bars after trigger)
     
-    Args:
-        mask: 원본 시그널 (bool Series)
-        bars: 쿨다운 봉 수
-    
-    Returns:
-        쿨다운 적용된 마스크
-    
-    예시:
+    Example:
         input:  [F, T, T, F, T, F]  (bars=2)
         output: [F, T, F, F, T, F]
-                     ↑ 신호   ↑ 2봉 후 재개
     """
     if bars <= 0:
         return mask
@@ -127,25 +117,13 @@ def cooloff_mask(mask: pl.Series, bars: int) -> pl.Series:
     return pl.Series(result, dtype=pl.Boolean)
 
 
-# ========== 임계값 계산 (기존 + EWQ 통합) ==========
+# ========== Threshold Computation ==========
 def compute_thresholds_ewq(
     df: pl.DataFrame,
     cfg: Dict[str, Any],
     use_gate: bool = True
 ) -> Tuple[float, float, Dict[str, Any]]:
-    """
-    EWQ 기반 동적 임계값 (기존 로직 유지)
-    
-    Args:
-        df: 전체 DataFrame
-        cfg: 설정
-        use_gate: gate_ok 필터링 여부
-    
-    Returns:
-        thr_c: cand 임계값
-        thr_e: enter 임계값
-        info: 디버깅 정보
-    """
+    """EWQ-based dynamic threshold"""
     from src.signals.ewq_numba import ewq_batch_numba
     import numpy as np
     
@@ -156,7 +134,6 @@ def compute_thresholds_ewq(
     daily_cap = float(ewq_cfg.get("daily_cap", 0.03))
     tf_per_day = int(ewq_cfg.get("tf_per_day", 96))
     
-    # gate 필터링
     if use_gate and "gate_ok" in df.columns:
         scores_series = df.filter(pl.col("gate_ok"))["score"]
         pool_tag = "gate_ok"
@@ -188,16 +165,7 @@ def compute_thresholds_quantile(
     scores: pl.Series,
     cfg: Dict[str, Any]
 ) -> Tuple[float, float, Dict[str, Any]]:
-    """
-    분위수 기반 임계값 (기존 로직)
-    
-    Args:
-        scores: 스코어 Series (gate 필터링된 값)
-        cfg: 설정
-    
-    Returns:
-        thr_c, thr_e, info
-    """
+    """Quantile-based threshold"""
     dbg = cfg.get("debug", {})
     auto = dbg.get("auto_thresholds", {"cand_pct": 0.75, "enter_pct": 0.85})
     cand_pct = float(auto.get("cand_pct", 0.75))
@@ -218,35 +186,31 @@ def compute_thresholds_quantile(
     }
 
 
-# ========== 백테스트 (신규: Polars 엔진 통합) ==========
+# ========== Backtest (Polars Engine) ==========
 def backtest_with_engine(
     df: pl.DataFrame,
     cfg: Dict[str, Any],
     skip_indicators: bool = False
 ) -> Tuple[pl.DataFrame, Dict[str, float]]:
     """
-    backtest_polars 엔진 사용 (v9.4 방식)
+    backtest_polars engine (v9.4)
     
-    Args:
-        df: OHLCV + indicators DataFrame
-        cfg: 설정 (v9.4 형식으로 변환)
-        skip_indicators: indicators 재계산 스킵
-    
-    Returns:
-        trades: 거래 DataFrame
-        metrics: {winrate, pf, expR, mdd_R, sharpe, ...}
+    주의: 이 함수는 df에 이미 score가 있다고 가정하지 않음
+          BacktestEngine 내부에서 score 재계산함
     """
     if not POLARS_ENGINE_AVAILABLE:
         raise ImportError("backtest_polars not available")
     
-    # cfg 변환 (기존 → v9.4)
+    # cfg 변환 (버그 1 수정: indicators 키 안전 접근)
+    atr_len = int(cfg.get("indicators", {}).get("atr", 14))
+    
     cfg_v9 = {
         "warmup_bars": cfg.get("warmup_bars", 300),
         "max_hold_bars": int(cfg["risk"].get("max_hold_min", 720) // 15),
         "side": cfg.get("side", "both"),
         
         "gate": {
-            "mode": cfg.get("gate_mode", "fixed"),  # fixed | adaptive_ewm_z
+            "mode": cfg.get("gate_mode", "fixed"),
             "fixed_threshold": cfg.get("fixed_threshold", 0.02),
             "phi": cfg.get("phi", 0.75),
             "ewm_alpha": cfg.get("ewm_alpha", 0.05),
@@ -254,13 +218,13 @@ def backtest_with_engine(
         },
         
         "risk": {
-            "max_risk_per_trade": cfg["risk"].get("atr_sl", 1.0) * 0.01,  # R 정규화
+            "max_risk_per_trade": cfg["risk"].get("atr_sl", 1.0) * 0.01,
         },
         
         "cols": {
             "ts": "ts",
             "close": "close",
-            "atr": f"atr{cfg['indicators']['atr']}_abs",
+            "atr": f"atr{atr_len}_abs",  # ← 버그 1 수정
         },
         
         "weights": cfg.get("weights", {}),
@@ -269,13 +233,14 @@ def backtest_with_engine(
             "enabled": cfg.get("cache_enabled", False),
             "dir": cfg.get("cache_dir", "cache"),
         },
+        
+        # 버그 3 대응: indicators 정보 전달
+        "indicators": cfg.get("indicators", {}),
     }
     
-    # 엔진 실행
     engine = BacktestEngine(cfg_v9)
     result = engine.run(df, skip_indicators=skip_indicators)
     
-    # 결과 변환 (v9.4 → 기존 형식)
     trades_v9 = result["trades"]
     metrics_v9 = result["metrics"]
     
@@ -283,7 +248,6 @@ def backtest_with_engine(
     if len(trades_v9) > 0:
         trades_df = pl.DataFrame(trades_v9)
         trades_df = trades_df.rename({"R": "rr"})
-        # 기존 형식에 맞게 추가 칼럼
         trades_df = trades_df.with_columns([
             pl.lit("vectorized").alias("reason"),
             pl.lit(cfg_v9["max_hold_bars"]).alias("bars"),
@@ -299,10 +263,10 @@ def backtest_with_engine(
             "bars": pl.Int32,
         })
     
-    # metrics 변환
+    # metrics 변환 (버그 4 대응: 키 일관성)
     metrics = {
         "winrate": metrics_v9["winrate"],
-        "pf": metrics_v9["profit_factor"],
+        "pf": metrics_v9["profit_factor"],  # v9 → 기존 키 변환
         "expR": metrics_v9["expectancy_R"],
         "mdd_R": metrics_v9["max_dd_R"],
         "avg_hold_bars": metrics_v9["avg_hold_bars"],
@@ -314,22 +278,22 @@ def backtest_with_engine(
     return trades_df, metrics
 
 
+# ========== Backtest (Loop Fallback) ==========
 def simple_backtest_loop(
     df: pl.DataFrame,
     cfg: Dict[str, Any]
 ) -> Tuple[pl.DataFrame, Dict[str, float]]:
     """
-    기존 loop 백테스트 (fallback)
+    Simple loop backtest (fallback)
     
-    Args:
-        df: enter_mask가 있는 DataFrame
-        cfg: 설정
-    
-    Returns:
-        trades, metrics
+    전제: df에 enter_mask 칼럼 존재해야 함
     """
+    # 버그 2 대응: enter_mask 존재 확인
+    if "enter_mask" not in df.columns:
+        raise ValueError("simple_backtest_loop requires 'enter_mask' column in df")
+    
     risk = cfg["risk"]
-    atr_len = int(cfg["indicators"]["atr"])
+    atr_len = int(cfg.get("indicators", {}).get("atr", 14))
     atr_col = f"atr{atr_len}_abs"
     
     close = df["close"]
@@ -339,7 +303,6 @@ def simple_backtest_loop(
     sl_R = float(risk.get("atr_sl", 1.0))
     max_hold_bars = int(risk.get("max_hold_min", 720) // 15)
     
-    # MDD breaker
     mdd_threshold = float(risk.get("mdd_breaker", 0.05))
     enable_mdd = bool(risk.get("enable_mdd_breaker", False))
     
@@ -351,7 +314,6 @@ def simple_backtest_loop(
     peak_R = 0.0
     
     while i < n:
-        # MDD 체크
         if enable_mdd and peak_R > 0:
             dd_R = peak_R - cumulative_R
             dd_pct = dd_R / peak_R
@@ -409,7 +371,6 @@ def simple_backtest_loop(
         else:
             i += 1
     
-    # trades DataFrame
     schema = {
         "entry_ts": pl.Datetime,
         "entry": pl.Float64,
@@ -425,7 +386,6 @@ def simple_backtest_loop(
     else:
         trades = pl.DataFrame(schema=schema)
     
-    # metrics
     if trades.height == 0:
         metrics = {
             "winrate": 0.0,
@@ -447,7 +407,6 @@ def simple_backtest_loop(
     expR = float(trades["rr"].mean())
     avg_hold = int(float(trades["bars"].mean()))
     
-    # MDD
     eq = trades["rr"].cum_sum()
     peak = eq.cum_max()
     dd = peak - eq
@@ -464,128 +423,131 @@ def simple_backtest_loop(
     return trades, metrics
 
 
-# ========== 메인 진입점 ==========
+# ========== Main Entry Point (버그 3, 5, 6 수정) ==========
 def run(
     cfg_path: Path,
     quiet: bool = False,
     use_polars_engine: bool = True
 ) -> Dict[str, Any]:
-    """
-    백테스트 실행 (통합)
-    
-    Args:
-        cfg_path: 설정 파일 경로
-        quiet: 출력 억제
-        use_polars_engine: True면 backtest_polars 엔진, False면 loop
-    
-    Returns:
-        결과 dict
-    """
+    """Backtest execution (integrated)"""
     t0 = time.time()
     
-    # 1. 설정 로드
+    # 1. Config load
     cfg = load_cfg(cfg_path)
     
-    # 2. 데이터 로드
+    # 2. Data load
     df = load_ohlcv(cfg)
     
-    # 3. Indicators
+    # 3. Indicators (always)
     df = add_indicators(df, cfg)
     
-    # 4. Score & Gate (기존 로직 유지)
-    df = score_and_gate(df, cfg)
-    
-    # 5. 임계값 계산
-    dbg = cfg.get("debug", {})
-    use_ewq = bool(cfg.get("use_ewq", False))
-    use_gate = not bool(dbg.get("no_gate", False))
-    
-    if use_ewq:
-        thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg, use_gate=use_gate)
-        pool_tag = thr_info.get("pool", "ewq")
-        pool_size = thr_info.get("pool_size", int(df.height))
-    else:
-        if use_gate and "gate_ok" in df.columns:
-            score_pool = df.filter(pl.col("gate_ok"))["score"]
-            pool_tag = "gate_ok"
-        else:
-            score_pool = df["score"]
-            pool_tag = "all"
-        
-        pool_size = int(score_pool.len())
-        thr_c, thr_e, thr_info = compute_thresholds_quantile(score_pool, cfg)
-        thr_info.update({"pool": pool_tag, "pool_size": pool_size})
-    
-    # 6. Mask 생성 (기존 로직)
-    if use_gate and "gate_ok" in df.columns:
-        base_gate = df["gate_ok"]
-    else:
-        base_gate = pl.Series([True] * len(df), dtype=pl.Boolean)
-    
-    cand_mask = (df["score"] >= thr_c)
-    enter_mask = (df["score"] >= thr_e)
-    
-    # Cooloff 적용
-    g = cfg["gates"]
-    if int(g.get("cooloff_bars", 0)) > 0:
-        cand_mask = cooloff_mask(cand_mask, int(g["cooloff_bars"]))
-    
-    # Gate AND
-    cand_mask = cand_mask & base_gate
-    enter_mask = enter_mask & base_gate
-    
-    df = df.with_columns([
-        pl.Series("cand_mask", cand_mask),
-        pl.Series("enter_mask", enter_mask),
-    ])
-    
-    # 디버깅 출력
-    if not quiet:
-        print(f"\n[DEBUG] Threshold info:")
-        print(f"  pool: {pool_tag}, size: {pool_size}")
-        print(f"  thr_c: {thr_c:.6f}, thr_e: {thr_e:.6f}")
-        print(f"\n[DEBUG] Mask stats:")
-        print(f"  cand_mask: {int(cand_mask.sum())} / {len(df)}")
-        print(f"  enter_mask: {int(enter_mask.sum())} / {len(df)}")
-    
-    # 7. 백테스트 실행
+    # ========== 핵심 수정: 엔진별 분기 ==========
     if use_polars_engine and POLARS_ENGINE_AVAILABLE:
+        # Polars 엔진: score_and_gate 스킵 (엔진 내부에서 처리)
         if not quiet:
             print(f"\n[ENGINE] Using backtest_polars (v9.4)")
         
-        # cfg에 gate_mode 추가 (adaptive_ewm_z 또는 fixed)
-        cfg["gate_mode"] = "fixed"  # 기본값
-        cfg["fixed_threshold"] = thr_c
+        # cfg에 gate_mode 설정
+        cfg["gate_mode"] = cfg.get("gate_mode", "fixed")
+        cfg["fixed_threshold"] = cfg.get("fixed_threshold", 0.02)
         
+        # 엔진 실행 (indicators만 있는 df 전달)
         trades, result = backtest_with_engine(df, cfg, skip_indicators=True)
+        
+        # threshold info (엔진 내부 값 사용)
+        thr_c = cfg["fixed_threshold"]
+        thr_e = thr_c
+        thr_info = {"thr_mode": "engine_internal"}
+        pool_tag = "engine"
+        
     else:
+        # Loop 방식: 기존 로직 유지
         if not quiet:
             print(f"\n[ENGINE] Using simple loop (fallback)")
+        
+        # 4. Score & Gate
+        df = score_and_gate(df, cfg)
+        
+        # 5. Threshold 계산
+        dbg = cfg.get("debug", {})
+        use_ewq = bool(cfg.get("use_ewq", False))
+        use_gate = not bool(dbg.get("no_gate", False))
+        
+        if use_ewq:
+            thr_c, thr_e, thr_info = compute_thresholds_ewq(df, cfg, use_gate=use_gate)
+            pool_tag = thr_info.get("pool", "ewq")
+            pool_size = thr_info.get("pool_size", int(df.height))
+        else:
+            if use_gate and "gate_ok" in df.columns:
+                score_pool = df.filter(pl.col("gate_ok"))["score"]
+                pool_tag = "gate_ok"
+            else:
+                score_pool = df["score"]
+                pool_tag = "all"
+            
+            pool_size = int(score_pool.len())
+            thr_c, thr_e, thr_info = compute_thresholds_quantile(score_pool, cfg)
+            thr_info.update({"pool": pool_tag, "pool_size": pool_size})
+        
+        # 6. Mask 생성
+        if use_gate and "gate_ok" in df.columns:
+            base_gate = df["gate_ok"]
+        else:
+            base_gate = pl.Series([True] * len(df), dtype=pl.Boolean)
+        
+        cand_mask = (df["score"] >= thr_c)
+        enter_mask = (df["score"] >= thr_e)
+        
+        # Cooloff
+        g = cfg["gates"]
+        if int(g.get("cooloff_bars", 0)) > 0:
+            cooloff_bars = int(g["cooloff_bars"])
+            cand_mask = cooloff_mask(cand_mask, cooloff_bars)
+            enter_mask = cooloff_mask(enter_mask, cooloff_bars)
+        
+        # Gate AND
+        cand_mask = cand_mask & base_gate
+        enter_mask = enter_mask & base_gate
+        
+        df = df.with_columns([
+            pl.Series("cand_mask", cand_mask),
+            pl.Series("enter_mask", enter_mask),
+        ])
+        
+        if not quiet:
+            print(f"\n[DEBUG] Threshold info:")
+            print(f"  pool: {pool_tag}, size: {pool_size}")
+            print(f"  thr_c: {thr_c:.6f}, thr_e: {thr_e:.6f}")
+            print(f"\n[DEBUG] Mask stats:")
+            print(f"  cand_mask: {int(cand_mask.sum())} / {len(df)}")
+            print(f"  enter_mask: {int(enter_mask.sum())} / {len(df)}")
+        
+        # 7. Loop backtest
         trades, result = simple_backtest_loop(df, cfg)
     
     elapsed = time.time() - t0
     
-    # 8. 통계
+    # 8. Stats (방어적 접근)
     stats = {
-        "score_q25": float(df["score"].quantile(0.25)),
-        "score_q50": float(df["score"].quantile(0.50)),
-        "score_q75": float(df["score"].quantile(0.75)),
-        "score_q90": float(df["score"].quantile(0.90)),
+        "score_q25": float(df["score"].quantile(0.25)) if "score" in df.columns else 0.0,
+        "score_q50": float(df["score"].quantile(0.50)) if "score" in df.columns else 0.0,
+        "score_q75": float(df["score"].quantile(0.75)) if "score" in df.columns else 0.0,
+        "score_q90": float(df["score"].quantile(0.90)) if "score" in df.columns else 0.0,
         "rows": df.height,
-        "gate_ok_rows": int(base_gate.sum()),
-        "gate_ok_rate": float(base_gate.mean()),
+        "gate_ok_rows": int(df["gate_ok"].sum()) if "gate_ok" in df.columns else 0,
+        "gate_ok_rate": float(df["gate_ok"].mean()) if "gate_ok" in df.columns else 0.0,
     }
     
     counts = {
         "total_rows": df.height,
-        "score_ge_cand": int((df["score"] >= thr_c).sum()),
-        "score_ge_enter": int((df["score"] >= thr_e).sum()),
-        "gate_ok": int(base_gate.sum()),
-        "cand_mask_true": int(cand_mask.sum()),
+        "score_ge_cand": int((df["score"] >= thr_c).sum()) if "score" in df.columns else 0,
+        "score_ge_enter": int((df["score"] >= thr_e).sum()) if "score" in df.columns else 0,
+        "gate_ok": int(df["gate_ok"].sum()) if "gate_ok" in df.columns else 0,
+        "cand_mask_true": int(df["cand_mask"].sum()) if "cand_mask" in df.columns else 0,
         "trades": trades.height,
     }
     
-    # 9. 결과 dict
+    # 9. Result dict
     out = {
         "winrate": result["winrate"],
         "pf": result["pf"],
@@ -608,7 +570,7 @@ def run(
         },
     }
     
-    # 10. 저장
+    # 10. Save
     trades_path = _ROOT / cfg["output"]["trades_csv"]
     dbg_path = _ROOT / cfg["output"]["dbg_json"]
     

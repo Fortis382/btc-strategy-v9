@@ -1,0 +1,15 @@
+# config/grid_params.yaml
+# Grid Search Parameters - Example
+
+# Factor weights (dotted-key)
+weights.trend: [0.20, 0.25, 0.30]
+weights.momentum: [0.20, 0.25, 0.30]
+weights.volatility: [0.10, 0.15, 0.20]
+
+# Gate threshold
+fixed_threshold: [0.02, 0.03, 0.04]
+
+# Risk
+risk.atr_sl: [0.8, 1.0, 1.2]
+
+# Total combinations: 3*3*3*3*3 = 243

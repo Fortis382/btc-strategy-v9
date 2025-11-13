@@ -1,17 +1,22 @@
 # scripts/backtest/cpcv_validate.py
-"""CPCV-lite (indicators 재계산 방지)"""
+"""CPCV-lite with indicators pre-calculation"""
 from __future__ import annotations
 from pathlib import Path
-import argparse, json
+import argparse
+import json
+import sys
 import polars as pl
 from typing import List, Dict, Any
+import yaml
 
-from backtest_polars import BacktestEngine, _read_parquet_any
+sys.path.insert(0, str(Path(__file__).parents[2]))
+from scripts.backtest.backtest_polars import BacktestEngine, _read_parquet_any
+from scripts.backtest.run_backtest import load_ohlcv
 from src.signals.indicators import add_indicators
 
 
 def _time_splits(df: pl.DataFrame, k: int, embargo: int):
-    """시간 순서 k-fold with embargo"""
+    """Time-series k-fold with embargo"""
     n = df.height
     fold_size = n // k
     
@@ -29,32 +34,39 @@ def main():
     ap.add_argument("--out", type=Path, default=Path("logs/cpcv"))
     args = ap.parse_args()
     
-    import yaml
+    args.out.mkdir(parents=True, exist_ok=True)
+    
+    # Load config
     cfg = yaml.safe_load(args.config.read_text("utf-8"))
     
-    # 전체 데이터에 indicators 미리 계산
-    df = _read_parquet_any(Path(cfg["data"]["path"]), cfg)
-    df = df.with_row_count("_idx").sort(cfg.get("cols", {}).get("ts", "ts"))
-    df = add_indicators(df, cfg)  # ← 한 번만
+    # Load data (use run_backtest's loader)
+    print("[CPCV] Loading data...")
+    df = load_ohlcv(cfg)
     
-    args.out.mkdir(parents=True, exist_ok=True)
+    # Add indicators once (without _idx - engine will add it)
+    print("[CPCV] Computing indicators (once)...")
+    df = df.sort("ts")  # ← _idx 제거 (BacktestEngine에서 생성)
+    df = add_indicators(df, cfg)
+    
+    # Create engine
     engine = BacktestEngine(cfg)
     
     folds: List[Dict[str, Any]] = []
     
+    print(f"\n[CPCV] Running {args.folds} folds...")
     for i, test_slice in enumerate(_time_splits(df, args.folds, args.embargo_bars), 1):
         test_df = df.slice(test_slice.start, test_slice.stop - test_slice.start)
         
-        # skip_indicators=True로 재계산 방지
+        # Run with skip_indicators=True
         res = engine.run(test_df, skip_indicators=True)
         m = res["metrics"]
         m["fold"] = i
         folds.append(m)
         
-        print(f"[FOLD {i}] n={m['total_trades']} WR={m['winrate']:.2%} "
+        print(f"  [FOLD {i}] n={m['total_trades']} WR={m['winrate']:.2%} "
               f"PF={m['profit_factor']:.2f} Sharpe={m['sharpe']:.2f}")
     
-    # 집계
+    # Aggregate (weighted by bars)
     weights = []
     for test_slice in _time_splits(df, args.folds, args.embargo_bars):
         weights.append(test_slice.stop - test_slice.start)
@@ -68,13 +80,18 @@ def main():
         "sharpe_avg": sum(f["sharpe"] for f in folds) / len(folds),
     }
     
+    # Save
     (args.out / "cpcv.json").write_text(
         json.dumps({"folds": folds, "agg": agg}, ensure_ascii=False, indent=2),
         "utf-8"
     )
     
-    print(f"\n[CPCV] folds={agg['folds']} WR~{agg['wr_wavg']:.2%} "
-          f"PF~{agg['pf_avg']:.2f} Sharpe~{agg['sharpe_avg']:.2f}")
+    print(f"\n[CPCV SUMMARY]")
+    print(f"  Folds: {agg['folds']}")
+    print(f"  WR (weighted): {agg['wr_wavg']:.2%}")
+    print(f"  PF (avg): {agg['pf_avg']:.2f}")
+    print(f"  ExpR (avg): {agg['expR_avg']:.3f}R")
+    print(f"  Sharpe (avg): {agg['sharpe_avg']:.2f}")
 
 
 if __name__ == "__main__":
