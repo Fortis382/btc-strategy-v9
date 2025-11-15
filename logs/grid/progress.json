@@ -17,7 +17,7 @@
     "mdd_R": 0.9,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.8,
+    "elapsed_sec": 0.826,
     "error": null
   },
   {
@@ -38,7 +38,7 @@
     "mdd_R": 1.0,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.043,
+    "elapsed_sec": 0.028,
     "error": null
   },
   {
@@ -59,7 +59,7 @@
     "mdd_R": 3.9,
     "sharpe": 0.0,
     "trades": 27,
-    "elapsed_sec": 0.033,
+    "elapsed_sec": 0.044,
     "error": null
   },
   {
@@ -80,7 +80,7 @@
     "mdd_R": 5.5,
     "sharpe": 0.0,
     "trades": 58,
-    "elapsed_sec": 0.036,
+    "elapsed_sec": 0.027,
     "error": null
   },
   {
@@ -101,7 +101,7 @@
     "mdd_R": 0.9,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.035,
+    "elapsed_sec": 0.029,
     "error": null
   },
   {
@@ -122,7 +122,7 @@
     "mdd_R": 1.0,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.035,
+    "elapsed_sec": 0.036,
     "error": null
   },
   {
@@ -143,11 +143,683 @@
     "mdd_R": 3.9,
     "sharpe": 0.0,
     "trades": 27,
+    "elapsed_sec": 0.044,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.047,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.044,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.044,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.035,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.044,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.043,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.036,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.031,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.056,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.059,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
     "elapsed_sec": 0.037,
     "error": null
   },
   {
     "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.035,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.036,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.04,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.036,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.049,
+    "error": null
+  },
+  {
+    "weights.trend": 0.3,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.037,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.033,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.03,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.043,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.033,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.25,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.035,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
     "weights.momentum": 0.25,
     "weights.volatility": 0.1,
     "weights.participation": 0.0,
@@ -168,678 +840,6 @@
     "error": null
   },
   {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.036,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.055,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.033,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.036,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.044,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.029,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.029,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.044,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.042,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.044,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.043,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.036,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.043,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.031,
-    "error": null
-  },
-  {
-    "weights.trend": 0.3,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.05,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.034,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.042,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.028,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.038,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
     "weights.trend": 0.35,
     "weights.momentum": 0.25,
     "weights.volatility": 0.15,
@@ -857,7 +857,7 @@
     "mdd_R": 0.9,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.029,
+    "elapsed_sec": 0.046,
     "error": null
   },
   {
@@ -878,7 +878,7 @@
     "mdd_R": 1.0,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.028,
+    "elapsed_sec": 0.048,
     "error": null
   },
   {
@@ -899,7 +899,7 @@
     "mdd_R": 3.9,
     "sharpe": 0.0,
     "trades": 27,
-    "elapsed_sec": 0.029,
+    "elapsed_sec": 0.053,
     "error": null
   },
   {
@@ -920,7 +920,7 @@
     "mdd_R": 5.5,
     "sharpe": 0.0,
     "trades": 58,
-    "elapsed_sec": 0.042,
+    "elapsed_sec": 0.058,
     "error": null
   },
   {
@@ -941,7 +941,7 @@
     "mdd_R": 0.9,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.029,
+    "elapsed_sec": 0.046,
     "error": null
   },
   {
@@ -962,27 +962,6 @@
     "mdd_R": 1.0,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.029,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.25,
-    "weights.volatility": 0.15,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
     "elapsed_sec": 0.046,
     "error": null
   },
@@ -997,69 +976,6 @@
       1.8,
       2.2
     ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.051,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.051,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.047,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
     "risk.atr_sl": 0.9,
     "winrate": 0.3333,
     "pf": 1.0,
@@ -1067,118 +983,34 @@
     "mdd_R": 3.9,
     "sharpe": 0.0,
     "trades": 27,
-    "elapsed_sec": 0.035,
+    "elapsed_sec": 0.04,
     "error": null
   },
   {
     "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.15,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.035,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.5,
-    "pf": 1.333,
-    "expR": 0.15,
-    "mdd_R": 0.9,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.033,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.2,
-      1.5,
-      2.0
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.5,
-    "pf": 1.2,
-    "expR": 0.1,
-    "mdd_R": 1.0,
-    "sharpe": 0.0,
-    "trades": 2,
-    "elapsed_sec": 0.037,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 0.9,
-    "winrate": 0.3333,
-    "pf": 1.0,
-    "expR": -0.0,
-    "mdd_R": 3.9,
-    "sharpe": 0.0,
-    "trades": 27,
-    "elapsed_sec": 0.029,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
-    "weights.volatility": 0.1,
-    "weights.participation": 0.0,
-    "weights.location": 0.2,
-    "risk.atr_tp": [
-      1.5,
-      1.8,
-      2.2
-    ],
-    "risk.atr_sl": 1.0,
-    "winrate": 0.3966,
-    "pf": 1.113,
-    "expR": 0.0603,
-    "mdd_R": 5.5,
-    "sharpe": 0.0,
-    "trades": 58,
-    "elapsed_sec": 0.044,
-    "error": null
-  },
-  {
-    "weights.trend": 0.35,
-    "weights.momentum": 0.3,
+    "weights.momentum": 0.25,
     "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.035,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
     "weights.participation": 0.0,
     "weights.location": 0.15,
     "risk.atr_tp": [
@@ -1199,6 +1031,174 @@
   {
     "weights.trend": 0.35,
     "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.045,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.046,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.035,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.036,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.5,
+    "pf": 1.2,
+    "expR": 0.1,
+    "mdd_R": 1.0,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.045,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.3333,
+    "pf": 1.0,
+    "expR": -0.0,
+    "mdd_R": 3.9,
+    "sharpe": 0.0,
+    "trades": 27,
+    "elapsed_sec": 0.029,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.1,
+    "weights.participation": 0.0,
+    "weights.location": 0.2,
+    "risk.atr_tp": [
+      1.5,
+      1.8,
+      2.2
+    ],
+    "risk.atr_sl": 1.0,
+    "winrate": 0.3966,
+    "pf": 1.113,
+    "expR": 0.0603,
+    "mdd_R": 5.5,
+    "sharpe": 0.0,
+    "trades": 58,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
+    "weights.volatility": 0.15,
+    "weights.participation": 0.0,
+    "weights.location": 0.15,
+    "risk.atr_tp": [
+      1.2,
+      1.5,
+      2.0
+    ],
+    "risk.atr_sl": 0.9,
+    "winrate": 0.5,
+    "pf": 1.333,
+    "expR": 0.15,
+    "mdd_R": 0.9,
+    "sharpe": 0.0,
+    "trades": 2,
+    "elapsed_sec": 0.028,
+    "error": null
+  },
+  {
+    "weights.trend": 0.35,
+    "weights.momentum": 0.3,
     "weights.volatility": 0.15,
     "weights.participation": 0.0,
     "weights.location": 0.15,
@@ -1214,7 +1214,7 @@
     "mdd_R": 1.0,
     "sharpe": 0.0,
     "trades": 2,
-    "elapsed_sec": 0.084,
+    "elapsed_sec": 0.029,
     "error": null
   },
   {
@@ -1235,7 +1235,7 @@
     "mdd_R": 3.9,
     "sharpe": 0.0,
     "trades": 27,
-    "elapsed_sec": 0.034,
+    "elapsed_sec": 0.028,
     "error": null
   },
   {
@@ -1256,7 +1256,7 @@
     "mdd_R": 5.5,
     "sharpe": 0.0,
     "trades": 58,
-    "elapsed_sec": 0.032,
+    "elapsed_sec": 0.029,
     "error": null
   }
 ]
